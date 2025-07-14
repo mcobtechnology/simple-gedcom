@@ -1,531 +1,243 @@
-# -*- coding: utf-8 -*-
+from typing import List
+from .elements import GedcomElement, Person, SourceElement, FamilyElement
 
-# Python GEDCOM Parser
-#
-# Copyright (C) 2018 Damon Brodie (damon.brodie at gmail.com)
-# Copyright (C) 2018-2019 Nicklas Reincke (contact at reynke.com)
-# Copyright (C) 2016 Andreas Oberritter
-# Copyright (C) 2012 Madeleine Price Ball
-# Copyright (C) 2005 Daniel Zappala (zappala at cs.byu.edu)
-# Copyright (C) 2005 Brigham Young University
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-# Further information about the license: http://www.gnu.org/licenses/gpl-2.0.html
-
-"""
-Module containing the actual `gedcom.parser.Parser` used to generate elements - out of each line -
-which can in return be manipulated.
-"""
-
-import re as regex
-from sys import version_info
-from gedcom.element.element import Element
-from gedcom.element.family import FamilyElement, NotAnActualFamilyError
-from gedcom.element.file import FileElement
-from gedcom.element.individual import IndividualElement, NotAnActualIndividualError
-from gedcom.element.object import ObjectElement
-from gedcom.element.root import RootElement
-import gedcom.tags
-
-FAMILY_MEMBERS_TYPE_ALL = "ALL"
-FAMILY_MEMBERS_TYPE_CHILDREN = gedcom.tags.GEDCOM_TAG_CHILD
-FAMILY_MEMBERS_TYPE_HUSBAND = gedcom.tags.GEDCOM_TAG_HUSBAND
-FAMILY_MEMBERS_TYPE_PARENTS = "PARENTS"
-FAMILY_MEMBERS_TYPE_WIFE = gedcom.tags.GEDCOM_TAG_WIFE
-
-
-class GedcomFormatViolationError(Exception):
-    pass
-
-
-class Parser(object):
-    """Parses and manipulates GEDCOM 5.5 format data
-
-    For documentation of the GEDCOM 5.5 format, see: http://homepages.rootsweb.ancestry.com/~pmcbride/gedcom/55gctoc.htm
-
-    This parser reads and parses a GEDCOM file.
-
-    Elements may be accessed via:
-
-    * a `list` through `gedcom.parser.Parser.get_element_list()`
-    * a `dict` through `gedcom.parser.Parser.get_element_dictionary()`
-    """
+class GedcomParser:
+    """Simple GEDCOM parser for extracting individual data"""
 
     def __init__(self):
-        self.__element_list = []
-        self.__element_dictionary = {}
-        self.__root_element = RootElement()
+        self.__root_element = GedcomElement(-1, '', 'ROOT', '')
+        self.__individuals = {}
+        self.__families = {}
+        self.__sources = {}
 
-    def invalidate_cache(self):
-        """Empties the element list and dictionary to cause `gedcom.parser.Parser.get_element_list()`
-        and `gedcom.parser.Parser.get_element_dictionary()` to return updated data.
+    def parse_file(self, file_path: str, strict: bool = False):
+        """Parse GEDCOM file"""
+        with open(file_path, 'rb') as gedcom_file:
+          gedcom_lines = gedcom_file.readlines()
 
-        The update gets deferred until each of the methods actually gets called.
-        """
-        self.__element_list = []
-        self.__element_dictionary = {}
+        # Reset state
+        self.__root_element = GedcomElement(-1, '', 'ROOT', '')
+        self.__individuals = {}
+        self.__families = {}
+        self.__sources = {}
 
-    def get_element_list(self):
-        """Returns a list containing all elements from within the GEDCOM file
+        # Parse lines
+        element_stack = [self.__root_element]
 
-        By default elements are in the same order as they appeared in the file.
+        for line_num, line in enumerate(gedcom_lines, 1):
+            try:
+                # Handle encoding
+                try:
+                    line_str = line.decode('utf-8-sig').rstrip('\r\n')
+                except UnicodeDecodeError:
+                    line_str = line.decode('utf-8', errors='replace').rstrip('\r\n')
 
-        This list gets generated on-the-fly, but gets cached. If the database
-        was modified, you should call `gedcom.parser.Parser.invalidate_cache()` once to let this
-        method return updated data.
+                if not line_str.strip():
+                    continue
 
-        Consider using `gedcom.parser.Parser.get_root_element()` or `gedcom.parser.Parser.get_root_child_elements()` to access
-        the hierarchical GEDCOM tree, unless you rarely modify the database.
+                element_stack = self._parse_line(line_str, element_stack, strict)
 
-        :rtype: list of Element
-        """
-        if not self.__element_list:
-            for element in self.get_root_child_elements():
-                self.__build_list(element, self.__element_list)
-        return self.__element_list
+            except Exception as e:
+                if strict:
+                    raise ValueError(f"Error parsing line {line_num}: {e}")
+                continue
 
-    def get_element_dictionary(self):
-        """Returns a dictionary containing all elements, identified by a pointer, from within the GEDCOM file
+    def _parse_line(self, line: str, element_stack: List[GedcomElement], strict: bool) -> List[GedcomElement]:
+        """Parse single GEDCOM line"""
+        parts = line.split(' ', 2)
+        if len(parts) < 2:
+            return element_stack
 
-        Only elements identified by a pointer are listed in the dictionary.
-        The keys for the dictionary are the pointers.
+        try:
+            level = int(parts[0])
+        except ValueError:
+            return element_stack
 
-        This dictionary gets generated on-the-fly, but gets cached. If the
-        database was modified, you should call `invalidate_cache()` once to let
-        this method return updated data.
-
-        :rtype: dict of Element
-        """
-        if not self.__element_dictionary:
-            self.__element_dictionary = {
-                element.get_pointer(): element for element in self.get_root_child_elements() if element.get_pointer()
-            }
-
-        return self.__element_dictionary
-
-    def get_root_element(self):
-        """Returns a virtual root element containing all logical records as children
-
-        When printed, this element converts to an empty string.
-
-        :rtype: RootElement
-        """
-        return self.__root_element
-
-    def get_root_child_elements(self):
-        """Returns a list of logical records in the GEDCOM file
-
-        By default, elements are in the same order as they appeared in the file.
-
-        :rtype: list of Element
-        """
-        return self.get_root_element().get_child_elements()
-
-    def parse_file(self, file_path, strict=True):
-        """Opens and parses a file, from the given file path, as GEDCOM 5.5 formatted data
-        :type file_path: str
-        :type strict: bool
-        """
-        with open(file_path, 'rb') as gedcom_stream:
-            self.parse(gedcom_stream, strict)
-
-    def parse(self, gedcom_stream, strict=True):
-        """Parses a stream, or an array of lines, as GEDCOM 5.5 formatted data
-        :type gedcom_stream: a file stream, or str array of lines with new line at the end
-        :type strict: bool
-        """
-        self.invalidate_cache()
-        self.__root_element = RootElement()
-
-        line_number = 1
-        last_element = self.get_root_element()
-
-        for line in gedcom_stream:
-            last_element = self.__parse_line(line_number, line.decode('utf-8-sig'), last_element, strict)
-            line_number += 1
-
-    # Private methods
-
-    @staticmethod
-    def __parse_line(line_number, line, last_element, strict=True):
-        """Parse a line from a GEDCOM 5.5 formatted document
-
-        Each line should have the following (bracketed items optional):
-        level + ' ' + [pointer + ' ' +] tag + [' ' + line_value]
-
-        :type line_number: int
-        :type line: str
-        :type last_element: Element
-        :type strict: bool
-
-        :rtype: Element
-        """
-
-        # Level must start with non-negative int, no leading zeros.
-        level_regex = '^(0|[1-9]+[0-9]*) '
-
-        # Pointer optional, if it exists it must be flanked by `@`
-        pointer_regex = '(@[^@]+@ |)'
-
-        # Tag must be an alphanumeric string
-        tag_regex = '([A-Za-z0-9_]+)'
-
-        # Value optional, consists of anything after a space to end of line
-        value_regex = '( [^\n\r]*|)'
-
-        # End of line defined by `\n` or `\r`
-        end_of_line_regex = '([\r\n]{1,2})'
-
-        # Complete regex
-        gedcom_line_regex = level_regex + pointer_regex + tag_regex + value_regex + end_of_line_regex
-        regex_match = regex.match(gedcom_line_regex, line)
-
-        if regex_match is None:
-            if strict:
-                error_message = ("Line <%d:%s> of document violates GEDCOM format 5.5" % (line_number, line)
-                                 + "\nSee: https://chronoplexsoftware.com/gedcomvalidator/gedcom/gedcom-5.5.pdf")
-                raise GedcomFormatViolationError(error_message)
-            else:
-                # Quirk check - see if this is a line without a CRLF (which could be the last line)
-                last_line_regex = level_regex + pointer_regex + tag_regex + value_regex
-                regex_match = regex.match(last_line_regex, line)
-                if regex_match is not None:
-                    line_parts = regex_match.groups()
-
-                    level = int(line_parts[0])
-                    pointer = line_parts[1].rstrip(' ')
-                    tag = line_parts[2]
-                    value = line_parts[3][1:]
-                    crlf = '\n'
-                else:
-                    # Quirk check - Sometimes a gedcom has a text field with a CR.
-                    # This creates a line without the standard level and pointer.
-                    # If this is detected then turn it into a CONC or CONT.
-                    line_regex = '([^\n\r]*|)'
-                    cont_line_regex = line_regex + end_of_line_regex
-                    regex_match = regex.match(cont_line_regex, line)
-                    line_parts = regex_match.groups()
-                    level = last_element.get_level()
-                    tag = last_element.get_tag()
-                    pointer = None
-                    value = line_parts[0][1:]
-                    crlf = line_parts[1]
-                    if tag != gedcom.tags.GEDCOM_TAG_CONTINUED and tag != gedcom.tags.GEDCOM_TAG_CONCATENATION:
-                        # Increment level and change this line to a CONC
-                        level += 1
-                        tag = gedcom.tags.GEDCOM_TAG_CONCATENATION
+        # Handle pointer vs tag
+        if parts[1].startswith('@') and parts[1].endswith('@'):
+            if len(parts) < 3:
+                return element_stack
+            pointer = parts[1]
+            tag_and_value = parts[2].split(' ', 1)
+            tag = tag_and_value[0]
+            value = tag_and_value[1] if len(tag_and_value) > 1 else ''
         else:
-            line_parts = regex_match.groups()
+            pointer = ''
+            tag = parts[1]
+            value = parts[2] if len(parts) > 2 else ''
 
-            level = int(line_parts[0])
-            pointer = line_parts[1].rstrip(' ')
-            tag = line_parts[2]
-            value = line_parts[3][1:]
-            crlf = line_parts[4]
-
-        # Check level: should never be more than one higher than previous line.
-        if level > last_element.get_level() + 1:
-            error_message = ("Line %d of document violates GEDCOM format 5.5" % line_number
-                             + "\nLines must be no more than one level higher than previous line."
-                             + "\nSee: https://chronoplexsoftware.com/gedcomvalidator/gedcom/gedcom-5.5.pdf")
-            raise GedcomFormatViolationError(error_message)
-
-        # Create element. Store in list and dict, create children and parents.
-        if tag == gedcom.tags.GEDCOM_TAG_INDIVIDUAL:
-            element = IndividualElement(level, pointer, tag, value, crlf, multi_line=False)
-        elif tag == gedcom.tags.GEDCOM_TAG_FAMILY:
-            element = FamilyElement(level, pointer, tag, value, crlf, multi_line=False)
-        elif tag == gedcom.tags.GEDCOM_TAG_FILE:
-            element = FileElement(level, pointer, tag, value, crlf, multi_line=False)
-        elif tag == gedcom.tags.GEDCOM_TAG_OBJECT:
-            element = ObjectElement(level, pointer, tag, value, crlf, multi_line=False)
+        # Create element
+        if tag == 'INDI':
+            element = Person(level, pointer, tag, value)
+            if pointer:
+                self.__individuals[pointer] = element
+        elif tag == 'FAM':
+            element = FamilyElement(level, pointer, tag, value)
+            if pointer:
+                self.__families[pointer] = element
+        elif tag == 'SOUR':
+            element = SourceElement(level, pointer, tag, value)
+            if pointer:
+                self.__sources[pointer] = element
         else:
-            element = Element(level, pointer, tag, value, crlf, multi_line=False)
+            element = GedcomElement(level, pointer, tag, value)
 
-        # Start with last element as parent, back up if necessary.
-        parent_element = last_element
+        # Build hierarchy
+        while len(element_stack) > 1 and element_stack[-1].get_level() >= level:
+            element_stack.pop()
 
-        while parent_element.get_level() > level - 1:
-            parent_element = parent_element.get_parent_element()
+        parent = element_stack[-1]
+        parent.add_child(element)
+        element_stack.append(element)
 
-        # Add child to parent & parent to child.
-        parent_element.add_child_element(element)
+        return element_stack
 
-        return element
+    def get_root_child_elements(self) -> List[GedcomElement]:
+        """Get all top-level elements"""
+        return self.__root_element.get_children()
 
-    def __build_list(self, element, element_list):
-        """Recursively add elements to a list containing elements
-        :type element: Element
-        :type element_list: list of Element
-        """
-        element_list.append(element)
-        for child in element.get_child_elements():
-            self.__build_list(child, element_list)
-
-    # Methods for analyzing individuals and relationships between individuals
-
-    def get_marriages(self, individual):
-        """Returns a list of marriages of an individual formatted as a tuple (`str` date, `str` place)
-        :type individual: IndividualElement
-        :rtype: tuple
-        """
-        marriages = []
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-        # Get and analyze families where individual is spouse.
-        families = self.get_families(individual, gedcom.tags.GEDCOM_TAG_FAMILY_SPOUSE)
-        for family in families:
-            for family_data in family.get_child_elements():
-                if family_data.get_tag() == gedcom.tags.GEDCOM_TAG_MARRIAGE:
-                    date = ''
-                    place = ''
-                    for marriage_data in family_data.get_child_elements():
-                        if marriage_data.get_tag() == gedcom.tags.GEDCOM_TAG_DATE:
-                            date = marriage_data.get_value()
-                        if marriage_data.get_tag() == gedcom.tags.GEDCOM_TAG_PLACE:
-                            place = marriage_data.get_value()
-                    marriages.append((date, place))
-        return marriages
-
-    def get_marriage_years(self, individual):
-        """Returns a list of marriage years (as integers) for an individual
-        :type individual: IndividualElement
-        :rtype: list of int
-        """
-        dates = []
-
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
-        # Get and analyze families where individual is spouse.
-        families = self.get_families(individual, gedcom.tags.GEDCOM_TAG_FAMILY_SPOUSE)
-        for family in families:
-            for child in family.get_child_elements():
-                if child.get_tag() == gedcom.tags.GEDCOM_TAG_MARRIAGE:
-                    for childOfChild in child.get_child_elements():
-                        if childOfChild.get_tag() == gedcom.tags.GEDCOM_TAG_DATE:
-                            date = childOfChild.get_value().split()[-1]
-                            try:
-                                dates.append(int(date))
-                            except ValueError:
-                                pass
-        return dates
-
-    def marriage_year_match(self, individual, year):
-        """Checks if one of the marriage years of an individual matches the supplied year. Year is an integer.
-        :type individual: IndividualElement
-        :type year: int
-        :rtype: bool
-        """
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
-        years = self.get_marriage_years(individual)
-        return year in years
-
-    def marriage_range_match(self, individual, from_year, to_year):
-        """Check if one of the marriage years of an individual is in a given range. Years are integers.
-        :type individual: IndividualElement
-        :type from_year: int
-        :type to_year: int
-        :rtype: bool
-        """
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
-        years = self.get_marriage_years(individual)
-        for year in years:
-            if from_year <= year <= to_year:
-                return True
-        return False
-
-    def get_families(self, individual, family_type=gedcom.tags.GEDCOM_TAG_FAMILY_SPOUSE):
-        """Return family elements listed for an individual
-
-        family_type can be `gedcom.tags.GEDCOM_TAG_FAMILY_SPOUSE` (families where the individual is a spouse) or
-        `gedcom.tags.GEDCOM_TAG_FAMILY_CHILD` (families where the individual is a child). If a value is not
-        provided, `gedcom.tags.GEDCOM_TAG_FAMILY_SPOUSE` is default value.
-
-        :type individual: IndividualElement
-        :type family_type: str
-        :rtype: list of FamilyElement
-        """
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
-        families = []
-        element_dictionary = self.get_element_dictionary()
-
-        for child_element in individual.get_child_elements():
-            is_family = (child_element.get_tag() == family_type
-                         and child_element.get_value() in element_dictionary)
-            if is_family:
-                families.append(element_dictionary[child_element.get_value()])
-
-        return families
-
-    def get_ancestors(self, individual, ancestor_type="ALL"):
-        """Return elements corresponding to ancestors of an individual
-
-        Optional `ancestor_type`. Default "ALL" returns all ancestors, "NAT" can be
-        used to specify only natural (genetic) ancestors.
-
-        :type individual: IndividualElement
-        :type ancestor_type: str
-        :rtype: list of Element
-        """
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
-        parents = self.get_parents(individual, ancestor_type)
-        ancestors = []
-        ancestors.extend(parents)
-
-        for parent in parents:
-            ancestors.extend(self.get_ancestors(parent))
-
-        return ancestors
-
-    def get_parents(self, individual, parent_type="ALL"):
-        """Return elements corresponding to parents of an individual
-
-        Optional parent_type. Default "ALL" returns all parents. "NAT" can be
-        used to specify only natural (genetic) parents.
-
-        :type individual: IndividualElement
-        :type parent_type: str
-        :rtype: list of IndividualElement
-        """
-        if not isinstance(individual, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag" % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
-
+    def get_parents(self, individual: Person) -> List[Person]:
+        """Get parents of an individual"""
         parents = []
-        families = self.get_families(individual, gedcom.tags.GEDCOM_TAG_FAMILY_CHILD)
+        individual_pointer = individual.get_pointer()
 
-        for family in families:
-            if parent_type == "NAT":
-                for family_member in family.get_child_elements():
+        if not individual_pointer:
+            return parents
 
-                    if family_member.get_tag() == gedcom.tags.GEDCOM_TAG_CHILD \
-                       and family_member.get_value() == individual.get_pointer():
+        # Find families where this individual is a child
+        for family in self.__families.values():
+            if individual_pointer in family.get_children():
+                husband_pointer = family.get_husband()
+                wife_pointer = family.get_wife()
 
-                        for child in family_member.get_child_elements():
-                            if child.get_value() == "Natural":
-                                if child.get_tag() == gedcom.tags.GEDCOM_PROGRAM_DEFINED_TAG_MREL:
-                                    parents += self.get_family_members(family, gedcom.tags.GEDCOM_TAG_WIFE)
-                                elif child.get_tag() == gedcom.tags.GEDCOM_PROGRAM_DEFINED_TAG_FREL:
-                                    parents += self.get_family_members(family, gedcom.tags.GEDCOM_TAG_HUSBAND)
-            else:
-                parents += self.get_family_members(family, "PARENTS")
+                if husband_pointer and husband_pointer in self.__individuals:
+                    parents.append(self.__individuals[husband_pointer])
+
+                if wife_pointer and wife_pointer in self.__individuals:
+                    parents.append(self.__individuals[wife_pointer])
 
         return parents
 
-    def find_path_to_ancestor(self, descendant, ancestor, path=None):
-        """Return path from descendant to ancestor
-        :rtype: object
-        """
-        if not isinstance(descendant, IndividualElement) and isinstance(ancestor, IndividualElement):
-            raise NotAnActualIndividualError(
-                "Operation only valid for elements with %s tag." % gedcom.tags.GEDCOM_TAG_INDIVIDUAL
-            )
+    def get_father_mother(self, individual: Person) -> tuple:
+        """Get father and mother, using family roles first, then gender"""
+        father = mother = None
+        individual_pointer = individual.get_pointer()
 
-        if not path:
-            path = [descendant]
+        if not individual_pointer:
+            return (father, mother)
 
-        if path[-1].get_pointer() == ancestor.get_pointer():
-            return path
-        else:
-            parents = self.get_parents(descendant, "NAT")
-            for parent in parents:
-                potential_path = self.find_path_to_ancestor(parent, ancestor, path + [parent])
-                if potential_path is not None:
-                    return potential_path
+        # Find families where this individual is a child
+        for family in self.__families.values():
+            if individual_pointer in family.get_children():
+                husband_pointer = family.get_husband()
+                wife_pointer = family.get_wife()
 
-        return None
+                # Use family roles first
+                if husband_pointer and husband_pointer in self.__individuals:
+                    father = self.__individuals[husband_pointer]
 
-    def get_family_members(self, family, members_type=FAMILY_MEMBERS_TYPE_ALL):
-        """Return array of family members: individual, spouse, and children
+                if wife_pointer and wife_pointer in self.__individuals:
+                    mother = self.__individuals[wife_pointer]
 
-        Optional argument `members_type` can be used to return specific subsets:
+        # If we didn't find both from family roles, fall back to any remaining parents by gender
+        if not father or not mother:
+            all_parents = self.get_parents(individual)
+            for parent in all_parents:
+                # Skip if already assigned by family role
+                if parent == father or parent == mother:
+                    continue
 
-        "FAMILY_MEMBERS_TYPE_ALL": Default, return all members of the family
-        "FAMILY_MEMBERS_TYPE_PARENTS": Return individuals with "HUSB" and "WIFE" tags (parents)
-        "FAMILY_MEMBERS_TYPE_HUSBAND": Return individuals with "HUSB" tags (father)
-        "FAMILY_MEMBERS_TYPE_WIFE": Return individuals with "WIFE" tags (mother)
-        "FAMILY_MEMBERS_TYPE_CHILDREN": Return individuals with "CHIL" tags (children)
+                if not father and parent.get_gender() == 'M':
+                    father = parent
+                elif not mother and parent.get_gender() == 'F':
+                    mother = parent
+                elif not father and not mother:
+                    # If no gender info, assign to first available slot
+                    if not father:
+                        father = parent
+                    else:
+                        mother = parent
 
-        :type family: FamilyElement
-        :type members_type: str
-        :rtype: list of IndividualElement
-        """
-        if not isinstance(family, FamilyElement):
-            raise NotAnActualFamilyError(
-                "Operation only valid for element with %s tag." % gedcom.tags.GEDCOM_TAG_FAMILY
-            )
+        return (father, mother)
 
-        family_members = []
-        element_dictionary = self.get_element_dictionary()
+    def get_person_list(self) -> List[dict]:
+        """Get people data with one row per person"""
+        people = []
 
-        for child_element in family.get_child_elements():
-            # Default is ALL
-            is_family = (child_element.get_tag() == gedcom.tags.GEDCOM_TAG_HUSBAND
-                         or child_element.get_tag() == gedcom.tags.GEDCOM_TAG_WIFE
-                         or child_element.get_tag() == gedcom.tags.GEDCOM_TAG_CHILD)
+        # Go through all individuals
+        for person in self.__individuals.values():
+            pointer = person.get_pointer()
+            first_name, last_name = person.get_name()
+            birth_date, birth_place = person.get_birth_date_place()
+            death_date, death_place = person.get_death_date_place()
 
-            if members_type == FAMILY_MEMBERS_TYPE_PARENTS:
-                is_family = (child_element.get_tag() == gedcom.tags.GEDCOM_TAG_HUSBAND
-                             or child_element.get_tag() == gedcom.tags.GEDCOM_TAG_WIFE)
-            elif members_type == FAMILY_MEMBERS_TYPE_HUSBAND:
-                is_family = child_element.get_tag() == gedcom.tags.GEDCOM_TAG_HUSBAND
-            elif members_type == FAMILY_MEMBERS_TYPE_WIFE:
-                is_family = child_element.get_tag() == gedcom.tags.GEDCOM_TAG_WIFE
-            elif members_type == FAMILY_MEMBERS_TYPE_CHILDREN:
-                is_family = child_element.get_tag() == gedcom.tags.GEDCOM_TAG_CHILD
+            # Get father and mother
+            father, mother = self.get_father_mother(person)
+            father_first_name = father_last_name = father_pointer = ''
+            mother_first_name = mother_last_name = mother_pointer = ''
 
-            if is_family and child_element.get_value() in element_dictionary:
-                family_members.append(element_dictionary[child_element.get_value()])
+            if father:
+                father_first_name, father_last_name = father.get_name()
+                father_pointer = father.get_pointer()
+            if mother:
+                mother_first_name, mother_last_name = mother.get_name()
+                mother_pointer = mother.get_pointer()
 
-        return family_members
+            # Base person data
+            person_data = {
+                'Person ID': pointer,
+                'First Name': first_name,
+                'Last Name': last_name,
+                'Birth Date': birth_date,
+                'Birth Place': birth_place,
+                'Death Date': death_date,
+                'Death Place': death_place,
+                'Father First Name': father_first_name,
+                'Father Last Name': father_last_name,
+                'Mother First Name': mother_first_name,
+                'Mother Last Name': mother_last_name
+            }
 
-    # Other methods
+            people.append(person_data)
 
-    def print_gedcom(self):
-        """Write GEDCOM data to stdout"""
-        from sys import stdout
-        self.save_gedcom(stdout)
+        return people
 
-    def save_gedcom(self, open_file):
-        """Save GEDCOM data to a file
-        :type open_file: file
-        """
-        if version_info[0] >= 3:
-            open_file.write(self.get_root_element().to_gedcom_string(True))
-        else:
-            open_file.write(self.get_root_element().to_gedcom_string(True).encode('utf-8-sig'))
+
+    def get_person_sources(self) -> List[dict]:
+        """Get people data with one row per person-source combination"""
+        person_source_list = []
+
+        # Go through all individuals
+        for person in self.__individuals.values():
+            pointer = person.get_pointer()
+            person_sources = person.get_all_person_sources()
+
+            # Base person data
+            base_person_data = {
+                'Person ID': pointer
+            }
+
+            if person_sources:
+                # Create one row per source
+                for source_pointer in person_sources:
+                    if source_pointer in self.__sources:
+                        source = self.__sources[source_pointer]
+                        row_data = base_person_data.copy()
+                        row_data.update({
+                            'Source ID': source.get_pointer(),
+                            'Source Title': source.get_title(),
+                            'Source Author': source.get_author(),
+                            'Source Publication': source.get_publication(),
+                            'Source Repository': source.get_repository()
+                        })
+                        person_source_list.append(row_data)
+
+        return person_source_list
+
+    def get_all_sources(self) -> List[SourceElement]:
+        """Get all source records in the file"""
+        return list(self.__sources.values())
+
+    def get_source_by_pointer(self, pointer: str) -> SourceElement:
+        """Get a source by its pointer/ID"""
+        return self.__sources.get(pointer)
