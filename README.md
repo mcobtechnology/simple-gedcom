@@ -13,11 +13,6 @@ A simplified Python library for extracting genealogy data from GEDCOM files, foc
 - Simple, clean API designed for data analysis
 - Easy integration with pandas DataFrames
 
-## Installation
-
-```bash
-pip install -e .
-```
 
 ## Quick Start
 
