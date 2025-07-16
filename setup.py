@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     
 setup(
     name='simple-gedcom',
-    version='1.0.0',
+    version='1.0.1',
     description='A Python module for parsing and analyzing GEDCOM files.',
     author='mcobtechnology',
     long_description=long_description,
