@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+
 class GedcomElement:
     """Base class for GEDCOM elements"""
 
@@ -37,7 +38,8 @@ class GedcomElement:
         """Value of the first child element with a specific tag"""
         elements = self.get_child_elements(tag)
         return elements[0].get_value() if elements else ''
-        
+
+
 class Person(GedcomElement):
     """Individual person element"""
 
@@ -111,6 +113,7 @@ class Person(GedcomElement):
         # Remove duplicates and return
         return list(set(sources))
 
+
 class SourceElement(GedcomElement):
     """Source element"""
 
@@ -126,6 +129,7 @@ class SourceElement(GedcomElement):
     def get_repository(self) -> str:
         return self.get_child_value('REPO')
 
+
 class FamilyElement(GedcomElement):
     """Family element - minimal implementation for parent lookup"""
 
@@ -137,5 +141,3 @@ class FamilyElement(GedcomElement):
 
     def get_children(self) -> List[str]:
         return [child.get_value() for child in self.get_child_elements('CHIL')]
-
-        

@@ -1,6 +1,7 @@
 from typing import List
 from .elements import GedcomElement, Person, SourceElement, FamilyElement
 
+
 class GedcomParser:
     """Simple GEDCOM parser for extracting individual data"""
 
@@ -13,7 +14,7 @@ class GedcomParser:
     def parse_file(self, file_path: str, strict: bool = False):
         """Parse GEDCOM file"""
         with open(file_path, 'rb') as gedcom_file:
-          gedcom_lines = gedcom_file.readlines()
+            gedcom_lines = gedcom_file.readlines()
 
         # Reset state
         self.__root_element = GedcomElement(-1, '', 'ROOT', '')
@@ -195,13 +196,14 @@ class GedcomParser:
                 'Father First Name': father_first_name,
                 'Father Last Name': father_last_name,
                 'Mother First Name': mother_first_name,
-                'Mother Last Name': mother_last_name
+                'Mother Last Name': mother_last_name,
+                'Father ID': father_pointer,
+                'Mother ID': mother_pointer
             }
 
             people.append(person_data)
 
         return people
-
 
     def get_person_sources(self) -> List[dict]:
         """Get people data with one row per person-source combination"""
