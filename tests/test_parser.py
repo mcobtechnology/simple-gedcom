@@ -1,6 +1,5 @@
 import unittest
-from simple_gedcom import GedcomParser
-
+from simple_gedcom import GedcomParser, get_person_list, get_person_source_list
 
 class TestGedcomParser(unittest.TestCase):
     
@@ -12,13 +11,13 @@ class TestGedcomParser(unittest.TestCase):
     def test_empty_person_list(self):
         """Test parser with no file returns empty list"""
         parser = GedcomParser()
-        people = parser.get_person_list()
+        people = get_person_list(parser)  # Fixed
         self.assertEqual(len(people), 0)
     
     def test_empty_sources_list(self):
         """Test parser with no file returns empty sources"""
         parser = GedcomParser()
-        sources = parser.get_person_sources()
+        sources = get_person_source_list(parser)  # Fixed
         self.assertEqual(len(sources), 0)
 
     def test_real_gedcom_file(self):
@@ -29,7 +28,7 @@ class TestGedcomParser(unittest.TestCase):
         parser.parse_file('tests/data/tree.ged')
         
         # Get people and verify we found some
-        people = parser.get_person_list()
+        people = get_person_list(parser)  # Fixed
         self.assertGreater(len(people), 0, "Should find at least one person")
         
         # Check that first person has expected structure
@@ -40,7 +39,7 @@ class TestGedcomParser(unittest.TestCase):
             self.assertIn('Last Name', person)
         
         # Test sources
-        sources = parser.get_person_sources()
+        sources = get_person_source_list(parser)  # Fixed
         print(f"Found {len(people)} people and {len(sources)} sources")
 
 if __name__ == '__main__':
