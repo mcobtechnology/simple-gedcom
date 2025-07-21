@@ -1,5 +1,5 @@
 from simple_gedcom import GedcomParser, get_person_list, save_people_to_csv
-from simple_gedcom import get_source_list, get_person_source_list, get_pedigree
+from simple_gedcom import get_source_list, get_person_source_list, get_pedigree, save_pedigree_to_csv
 
 import pandas as pd
 
@@ -18,8 +18,11 @@ parser.parse_file('data/Family Tree.ged')
 # df_people = pd.DataFrame(get_person_list(parser))
 # df_sources = pd.DataFrame(get_person_source_list(parser))
 
-pedigree = get_pedigree(parser)
+# pedigree = get_pedigree(parser)
 
-df = pd.DataFrame(pedigree)
+# df = pd.DataFrame(pedigree).T.reset_index()
+# df.rename(columns={'index': 'Position'}, inplace=True)
+# df = df.sort_values('Generation')
+# print(df)
 
-print(df)
+save_pedigree_to_csv(parser)
