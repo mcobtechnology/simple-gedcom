@@ -118,10 +118,14 @@ class GedcomParser:
                 wife_pointer = family.get_wife()
 
                 if husband_pointer and husband_pointer in self.__individuals:
-                    parents.append(self.__individuals[husband_pointer])
+                    husband = self.__individuals[husband_pointer]
+                    if husband is not None:  # Extra safety check
+                        parents.append(husband)
 
                 if wife_pointer and wife_pointer in self.__individuals:
-                    parents.append(self.__individuals[wife_pointer])
+                    wife = self.__individuals[wife_pointer]
+                    if wife is not None:  # Extra safety check
+                        parents.append(wife)
 
         return parents
 

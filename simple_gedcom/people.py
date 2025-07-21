@@ -1,6 +1,25 @@
 from typing import List
 import pandas as pd
 from .parser import GedcomParser
+from .elements import Person 
+
+def fill_person(parser: GedcomParser, person: Person) -> dict:
+    """Fill person data dictionary"""
+    
+    first_name, last_name = person.get_name()
+    
+    birth_date, birth_place = person.get_birth_date_place()
+    death_date, death_place = person.get_death_date_place()
+    
+    return {
+        'Person ID': person.get_pointer(),
+        'First Name': first_name,
+        'Last Name': last_name,
+        'Birth Date': birth_date,
+        'Birth Place': birth_place,
+        'Death Date': death_date,
+        'Death Place': death_place
+    }
 
 def get_person_list(parser: GedcomParser) -> List[dict]:
     """Get people data with one row per person"""
@@ -8,39 +27,8 @@ def get_person_list(parser: GedcomParser) -> List[dict]:
 
     # Go through all individuals
     for person in parser.get_individuals().values():
-        pointer = person.get_pointer()
-        first_name, last_name = person.get_name()
-        birth_date, birth_place = person.get_birth_date_place()
-        death_date, death_place = person.get_death_date_place()
 
-        # Get father and mother
-        father, mother = parser.get_father_mother(person)
-        father_first_name = father_last_name = father_pointer = ''
-        mother_first_name = mother_last_name = mother_pointer = ''
-
-        if father:
-            father_first_name, father_last_name = father.get_name()
-            father_pointer = father.get_pointer()
-        if mother:
-            mother_first_name, mother_last_name = mother.get_name()
-            mother_pointer = mother.get_pointer()
-
-        # Base person data
-        person_data = {
-            'Person ID': pointer,
-            'First Name': first_name,
-            'Last Name': last_name,
-            'Birth Date': birth_date,
-            'Birth Place': birth_place,
-            'Death Date': death_date,
-            'Death Place': death_place,
-            'Father First Name': father_first_name,
-            'Father Last Name': father_last_name,
-            'Mother First Name': mother_first_name,
-            'Mother Last Name': mother_last_name,
-            'Father ID': father_pointer,
-            'Mother ID': mother_pointer
-        }
+        person_data = fill_person(parser, person)
 
         person_list.append(person_data)
 
@@ -72,3 +60,50 @@ def save_people_to_csv(parser: GedcomParser, output_filename: str = None):
     people_df.to_csv(output_filename, index=False)
     
     return output_filename
+
+def get_pedigree(parser: GedcomParser):
+         
+    root_child_elements = parser.get_root_child_elements()
+
+    pedigree = {}
+        
+    for element in root_child_elements:
+        if isinstance(element, Person):
+            # GENERATION 1
+            pedigree["HP"] = fill_person(parser, element)
+
+            # GENERATION 2
+            parents = parser.get_parents(element)
+            
+            for parent in parents:
+                
+                if parent.get_gender() == 'M':
+                    pedigree["P1"] = fill_person(parser, parent)
+                    # GENERATION 3
+                    grandparents = parser.get_parents(parent)
+                    
+                    for grandparent in grandparents:
+                        if grandparent is None:  # Safety check
+                            continue
+                                                    
+                        if grandparent.get_gender() == 'M':
+                            pedigree["GP1"] = fill_person(parser, grandparent)
+                        else:
+                            pedigree["GP2"] = fill_person(parser, grandparent)
+                else:
+                    # MATERNAL
+                    pedigree["P2"] = fill_person(parser, parent)
+                    # GENERATION 3
+                    grandparents = parser.get_parents(parent)
+                    
+                    for grandparent in grandparents:
+                        
+                        if grandparent.get_gender() == 'M':
+                            pedigree["GP3"] = fill_person(parser, grandparent)
+                        else:
+                            pedigree["GP4"] = fill_person(parser, grandparent)
+
+            break
+                
+    # return the pedigree dictionary
+    return pedigree
