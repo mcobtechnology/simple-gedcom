@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simple-gedcom"
+version = "1.0.2"
+description = "A Python module for parsing and analyzing GEDCOM files."
+readme = "README.md"
+authors = [{name = "mcobtechnology"}]
+license = {text = "GPLv2"}
+keywords = ["python", "gedcom", "parser"]
+requires-python = ">=3.6"
+
+[project.urls]
+Homepage = "https://github.com/mcobtechnology/simple-gedcom"
+
+[tool.setuptools.packages.find]
