@@ -34,7 +34,7 @@ def get_person_list(parser: GedcomParser) -> List[dict]:
 
     return person_list
 
-def get_pedigree(parser: GedcomParser):
+def get_pedigree(parser: GedcomParser) -> dict:
     root_child_elements = parser.get_root_child_elements()
     pedigree = {}
     
@@ -102,7 +102,7 @@ def get_position_key(position_number: int, generation: int) -> str:
         
         return f"{g_prefix}GP{relative_position}"
 
-def save_people_to_csv(parser: GedcomParser, output_filename: str = None):
+def save_people_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get people data and save to CSV file"""
     import pandas as pd
     import os
@@ -129,7 +129,7 @@ def save_people_to_csv(parser: GedcomParser, output_filename: str = None):
     
     return output_filename
 
-def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None):
+def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get pedigree data and save to CSV file"""
     import pandas as pd
     import os

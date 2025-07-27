@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from .elements import GedcomElement, Person, SourceElement, FamilyElement
 
 
@@ -95,7 +95,7 @@ class GedcomParser:
 
         return element_stack
 
-    def get_file_path(self):
+    def get_file_path(self) -> Optional[str]:
         """Get the path of the parsed GEDCOM file"""
         return getattr(self, '_GedcomParser__file_path', None)
 
@@ -171,11 +171,11 @@ class GedcomParser:
 
         return (father, mother)
 
-    def get_individuals(self):
+    def get_individuals(self) -> Dict[str, Person]:
         """Get all individual records"""
         return self.__individuals
 
-    def get_sources(self):
+    def get_sources(self) -> Dict[str, SourceElement]:
         """Get all source records"""
         return self.__sources
 
