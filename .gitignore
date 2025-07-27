@@ -32,3 +32,4 @@ env/
 
 # Ignore all files in tests/data folder
 tests/data/*
+tests/my_test.py
