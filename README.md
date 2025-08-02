@@ -10,121 +10,55 @@ A simplified Python library for extracting genealogy data from GEDCOM files, foc
 - Parse GEDCOM 5.5 files
 - Extract person data: names, birth/death dates and places, parents
 - Extract source citations linked to individuals
-- Simple, clean API designed for data analysis
+- Simple, clean API designed for data analysis and writing to csv files
 - Easy integration with pandas DataFrames
-
 
 ## Quick Start
 
 ```python
-from gedcom import GedcomParser
+
+# Read a GEDCOM file and write lists to CSV files
+from simple_gedcom import load_gedcom
+
+gedcom = load_gedcom('data/tree.ged')
+
+gedcom.save_person_list_to_csv()
+
+gedcom.save_pedigree_to_csv()
+
+gedcom.save_source_list_to_csv()
+
+gedcom.save_person_source_list_to_csv()
+
+# Use pandas to display lists
 import pandas as pd
 
-# Parse GEDCOM file
-parser = GedcomParser()
-parser.parse_file('family_tree.ged')
+person_list = gedcom.get_person_list()
+df_person_list = pd.DataFrame(person_list)
+print(df_person_list.head())
 
-# Get list of all people
-people = parser.get_person_list()
-people_df = pd.DataFrame(people)
+sources = gedcom.get_source_list()
+df_sources = pd.DataFrame(sources)
+print(df_sources.head()) 
 
-# Get person-source relationships
-person_sources = parser.get_person_sources()
-sources_df = pd.DataFrame(person_sources)
-```
+person_sources = gedcom.get_person_source_list()
+df_person_sources = pd.DataFrame(person_sources)
+print(df_person_sources.head())
 
-## API Reference
+pedigree = gedcom.get_pedigree()
+df_pedigree = pd.DataFrame(pedigree)
+print(df_pedigree.head())
 
-### GedcomParser
+# Search by name
+found = gedcom.find_persons_by_name(first===_name="Theodore")
+df_found = pd.DataFrame(found)
+print(df_found.head())
 
-#### `parse_file(file_path, strict=False)`
-Parse a GEDCOM file.
+# Show the pedigree for a specific person (by ID)
+pedigree = gedcom.get_pedigree("@I162694122750@")
+df_pedigree = pd.DataFrame(pedigree)
+print(df_pedigree.head())
 
-**Parameters:**
-- `file_path` (str): Path to the GEDCOM file
-- `strict` (bool): If True, raise exceptions on parse errors
-
-#### `get_person_list()`
-Returns a list of dictionaries containing person data:
-
-```python
-[
-    {
-        'Person ID': '@I1@',
-        'First Name': 'John',
-        'Last Name': 'Doe',
-        'Birth Date': '1990',
-        'Birth Place': 'New York',
-        'Death Date': '',
-        'Death Place': '',
-        'Father First Name': 'Robert',
-        'Father Last Name': 'Doe',
-        'Mother First Name': 'Jane',
-        'Mother Last Name': 'Smith'
-    },
-    # ... more people
-]
-```
-
-#### `get_person_sources()`
-Returns a list of dictionaries with person-source relationships:
-
-```python
-[
-    {
-        'Person ID': '@I1@',
-        'Source ID': '@S1@',
-        'Source Title': 'Birth Certificate',
-        'Source Author': '',
-        'Source Publication': 'City Records',
-        'Source Repository': 'City Hall'
-    },
-    # ... more person-source combinations
-]
-```
-
-## Example Usage
-
-### Basic Person Data
-
-```python
-from gedcom import GedcomParser
-
-parser = GedcomParser()
-parser.parse_file('my_family.ged')
-
-# Get all people
-people = parser.get_person_list()
-
-# Print summary
-print(f"Found {len(people)} people in the family tree")
-
-# Look at first person
-if people:
-    person = people[0]
-    print(f"Name: {person['First Name']} {person['Last Name']}")
-    print(f"Born: {person['Birth Date']} in {person['Birth Place']}")
-```
-
-### With Pandas
-
-```python
-import pandas as pd
-from gedcom import GedcomParser
-
-parser = GedcomParser()
-parser.parse_file('my_family.ged')
-
-# Create DataFrames
-people_df = pd.DataFrame(parser.get_person_list())
-sources_df = pd.DataFrame(parser.get_person_sources())
-
-# Analyze the data
-print("Birth places:")
-print(people_df['Birth Place'].value_counts())
-
-print("\nSource types:")
-print(sources_df['Source Title'].value_counts())
 ```
 
 ## Requirements
