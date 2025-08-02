@@ -1,9 +1,12 @@
 from .parser import GedcomParser
-from .people import get_person_list, save_people_to_csv, get_pedigree, save_pedigree_to_csv
+from .people import get_person_list, find_persons_by_name, get_pedigree
+from .people import save_person_list_to_csv, save_pedigree_to_csv
 from .sources import get_source_list, get_person_source_list
+from .sources import save_source_list_to_csv, save_person_source_list_to_csv
+from .gedcom_file import load_gedcom, GedcomFile
 
 __version__ = "1.0.2"
 __all__ = ["GedcomParser", 
-           "get_person_list", "save_people_to_csv", 
+           "get_person_list", "find_persons_by_name", "save_person_list_to_csv", 
            "get_pedigree", "save_pedigree_to_csv", 
-           "get_source_list", "get_person_source_list"]
+           "get_source_list", "get_person_source_list", "GedcomFile"]

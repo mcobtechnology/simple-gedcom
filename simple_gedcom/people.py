@@ -1,5 +1,4 @@
 from typing import List
-import pandas as pd
 from .parser import GedcomParser
 from .elements import Person 
 
@@ -34,21 +33,66 @@ def get_person_list(parser: GedcomParser) -> List[dict]:
 
     return person_list
 
-def get_pedigree(parser: GedcomParser) -> dict:
+def find_persons_by_name(parser: GedcomParser, first_name: str = None, last_name: str = None) -> list:
+    """Find persons by first and/or last name"""
+    if first_name is None and last_name is None:
+        # If no search criteria provided, return all persons
+        return get_person_list(parser)
+    
+    person_list = get_person_list(parser)
+    matched_persons = []
+    
+    for person in person_list:
+        match = True
+        
+        # Check first name if provided
+        if first_name is not None:
+            person_first_name = person.get('First Name', '').strip()
+            if first_name.lower() not in person_first_name.lower():
+                match = False
+        
+        # Check last name if provided
+        if last_name is not None:
+            person_last_name = person.get('Last Name', '').strip()
+            if last_name.lower() not in person_last_name.lower():
+                match = False
+        
+        if match:
+            matched_persons.append(person)
+    
+    return matched_persons
+
+def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> dict:
+    """Get pedigree starting from a specific person or the first person found"""    
     root_child_elements = parser.get_root_child_elements()
     pedigree = {}
     
-    for element in root_child_elements:
-        if isinstance(element, Person):
-            # Start with the root person (HP = Home Person)
-            hp_data = fill_person(parser, element)
-            hp_data['Generation'] = 1
-            pedigree["HP"] = hp_data
-            
-            # Recursively build the pedigree
-            build_pedigree_recursive(parser, element, 1, 1, 10, pedigree)
-            break
-    
+    if person_pointer:
+        # Find the specific person by pointer
+        for element in root_child_elements:
+            if isinstance(element, Person) and element.get_pointer() == person_pointer:
+                start_person = element
+                break
+        
+        if start_person is None:
+            raise ValueError(f"Person with pointer '{person_pointer}' not found")
+    else:    
+        # Use the first person found (Home Person)
+        for element in root_child_elements:
+            if isinstance(element, Person):
+                start_person = element
+                break
+
+    # If we found a person (either specified or first one), build the pedigree
+    if start_person is not None:
+        # Start with the specified person as HP (Home Person)
+        hp_data = fill_person(parser, start_person)
+        hp_data['Generation'] = 1
+        pedigree["HP"] = hp_data
+                
+        # Recursively build the pedigree
+        build_pedigree_recursive(parser, element, 1, 1, 10, pedigree)
+        
     return pedigree
 
 def build_pedigree_recursive(parser: GedcomParser, person: Person, position_number: int, generation: int, max_generations: int, pedigree: dict):
@@ -102,9 +146,9 @@ def get_position_key(position_number: int, generation: int) -> str:
         
         return f"{g_prefix}GP{relative_position}"
 
-def save_people_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
+def save_person_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get people data and save to CSV file"""
-    import pandas as pd
+    import csv
     import os
     
     # Get the original GEDCOM file path from parser
@@ -119,19 +163,29 @@ def save_people_to_csv(parser: GedcomParser, output_filename: str = None) -> str
         output_filename = os.path.join(directory, f"{base_name}.csv")
     
     # Get the people data
-    people = get_person_list(parser)
+    person_list = get_person_list(parser)
     
-    # Convert to DataFrame
-    people_df = pd.DataFrame(people)
+    # Handle empty data
+    if not person_list:
+        # Create empty CSV file
+        with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            pass
+        return output_filename
+        
+    # Get column headers from the first record
+    headers = list(person_list[0].keys())
     
-    # Save to CSV
-    people_df.to_csv(output_filename, index=False)
+    # Write to CSV
+    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(person_list)
     
     return output_filename
 
 def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get pedigree data and save to CSV file"""
-    import pandas as pd
+    import csv
     import os
     
     # Get the original GEDCOM file path from parser
@@ -148,14 +202,40 @@ def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> s
     # Get the pedigree data
     pedigree = get_pedigree(parser)
     
-    # Convert to DataFrame
-    pedigree_df = pd.DataFrame(pedigree).T.reset_index()
-
-    # Add generation indicators
-    pedigree_df.rename(columns={'index': 'Position'}, inplace=True)
-    pedigree_df = pedigree_df.sort_values('Generation')
-
-    # Save to CSV
-    pedigree_df.to_csv(output_filename, index=False)
+    # Handle empty data
+    if not pedigree:
+        with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            pass
+        return output_filename
+        
+    # Transform the data (equivalent to DataFrame.T.reset_index())
+    # Assuming pedigree is a dict where keys become the 'Position' column
+    pedigree_list = []
+    for position, data in pedigree.items():
+        # Create a new dict with Position as first field
+        row = {'Position': position}
+        # Add all other fields from the data
+        if isinstance(data, dict):
+            row.update(data)
+        else:
+            # If data is not a dict, store it in a 'Value' column
+            row['Value'] = data
+        pedigree_list.append(row)
+    
+    # Sort by Generation (assuming Generation is a field in the data)
+    if pedigree_list and 'Generation' in pedigree_list[0]:
+        pedigree_list.sort(key=lambda x: x.get('Generation', 0))
+    
+    # Get headers
+    if pedigree_list:
+        headers = list(pedigree_list[0].keys())
+    else:
+        headers = ['Position']
+    
+    # Write to CSV
+    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(pedigree_list)
     
     return output_filename

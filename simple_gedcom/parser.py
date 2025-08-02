@@ -1,6 +1,5 @@
-from typing import List, Optional
+from typing import List, Tuple, Dict, Optional
 from .elements import GedcomElement, Person, SourceElement, FamilyElement
-
 
 class GedcomParser:
     """Simple GEDCOM parser for extracting individual data"""
