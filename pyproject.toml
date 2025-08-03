@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "simple-gedcom"
 version = "1.0.3"
 description = "A Python module for reading and extracting data from GEDCOM files."
+readme = {file = "README.md", content-type = "text/markdown"}
 readme = "README.md"
 authors = [{name = "mcobtechnology"}]
 license = {text = "GPLv2"}

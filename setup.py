@@ -10,6 +10,7 @@ setup(
     description='A Python module for reading and extracting data from GEDCOM files.',
     author='mcobtechnology',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/mcobtechnology/simple-gedcom",    
     license='GPLv2',
     keywords='python gedcom',
