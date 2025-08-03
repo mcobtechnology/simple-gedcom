@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.4] - 2025-08-03
+### Changed
+- Change project name to use an underscore instead of a hyphen
+- to comply with the latest PEP standards
 
 ## [1.0.3] - 2025-08-02
 ### Added
