@@ -32,4 +32,9 @@ env/
 
 # Ignore all files in tests/data folder
 tests/data/*
-tests/my_test.py
+
+# But keep tree.ged
+!tests/data/tree.ged
+
+# Ignore my extra test files
+tests/my_stuff.py

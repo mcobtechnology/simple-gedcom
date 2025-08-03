@@ -1,0 +1,227 @@
+0 HEAD
+1 SUBM @SUBM1@
+1 SOUR Ancestry.com Family Trees
+2 NAME Ancestry.com Member Trees
+2 VERS 2025.04
+2 _TREE tree
+3 RIN 205365616
+3 _ENV prd
+2 CORP Ancestry.com
+3 PHON 801-705-7000
+3 WWW www.ancestry.com
+3 ADDR 1300 West Traverse Parkway
+4 CONT Lehi, UT  84043
+4 CONT USA
+1 DATE 26 Jul 2025
+2 TIME 11:28:53
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @SUBM1@ SUBM
+1 NAME Ancestry.com Member Trees Submitter
+0 @I162694122749@ INDI
+1 NAME Theodore /Roosevelt/ Jr
+2 GIVN Theodore
+2 SURN Roosevelt
+2 NSFX Jr
+2 SOUR @S423456135@
+3 _APID 1,2340::57834
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769777
+1 SEX M
+1 FAMC @F1@
+1 FAMS @F2@
+1 BIRT
+2 DATE 27 Oct 1858
+2 PLAC New York City, New York, USA
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769777
+1 _MILT
+2 DATE 1898
+2 PLAC New York, United States
+2 SOUR @S423456135@
+3 _APID 1,2340::57834
+1 RESI
+2 DATE 1900
+2 PLAC Oyster Bay, Nassau, New York, USA
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769777
+2 NOTE Occupation: Governor; Marital Status: Married; Relation to Head of House: Head
+1 DEAT
+2 DATE 6 Jan 1919
+2 PLAC Oyster Bay, Nassau, New York, USA
+1 SOUR @S423456135@
+2 _APID 1,2340::57834
+1 SOUR @S423456128@
+2 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+2 _APID 1,7602::66769777
+1 OBJE @O1@
+2 _PRIM Y
+0 @I162694122750@ INDI
+1 NAME Theodore /Roosevelt/ Sr
+2 GIVN Theodore
+2 SURN Roosevelt
+2 NSFX Sr
+2 SOUR @S423456139@
+3 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+3 _APID 1,7836::1040679
+1 SEX M
+1 FAMS @F1@
+1 BIRT
+2 DATE 22 Sep 1831
+2 PLAC Albany County, New York, USA
+2 SOUR @S423456139@
+3 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+3 _APID 1,7836::1040679
+1 DEAT
+2 DATE 9 Feb 1878
+2 PLAC New York County, New York, USA
+1 SOUR @S423456139@
+2 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+2 _APID 1,7836::1040679
+0 @I162694122751@ INDI
+1 NAME Martha Stewart /Bulloch/
+2 GIVN Martha Stewart
+2 SURN Bulloch
+2 SOUR @S423456139@
+3 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+3 _APID 1,7836::175890
+1 SEX F
+1 FAMS @F1@
+1 BIRT
+2 DATE 8 Jul 1834
+2 PLAC Hartford, Hartford County, Connecticut, USA
+2 SOUR @S423456139@
+3 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+3 _APID 1,7836::175890
+1 DEAT
+2 DATE 14 Feb 1884
+2 PLAC New York City, New York County, New York, USA
+1 SOUR @S423456139@
+2 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+2 _APID 1,7836::175890
+1 OBJE @O2@
+2 _PRIM Y
+0 @I162694122904@ INDI
+1 NAME Edith C /Roosevelt/
+2 GIVN Edith C
+2 SURN Roosevelt
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769778
+1 SEX F
+1 FAMS @F2@
+1 BIRT
+2 DATE Aug 1861
+2 PLAC New York, USA
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769778
+1 RESI
+2 DATE 1900
+2 PLAC Oyster Bay, Nassau, New York, USA
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _APID 1,7602::66769778
+2 NOTE Marital Status: Married; Relation to Head of House: Wife
+1 SOUR @S423456128@
+2 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+2 _APID 1,7602::66769778
+0 @F1@ FAM
+1 HUSB @I162694122750@
+1 WIFE @I162694122751@
+1 CHIL @I162694122749@
+1 MARR
+2 DATE 1853
+2 PLAC GA
+2 SOUR @S423456139@
+3 PAGE Source number: 1030.000; Source type: Electronic Database; Number of Pages: 1; Submitter Code: WVB
+3 _WPID 1,7836::175890
+3 _HPID 1,7836::1040679
+0 @F2@ FAM
+1 HUSB @I162694122749@
+1 WIFE @I162694122904@
+1 MARR
+2 DATE 1883
+2 SOUR @S423456128@
+3 PAGE Year: 1900; Census Place: Oyster Bay, Nassau, New York; Roll: 1079; Page: 16; Enumeration District: 0723
+3 _HPID 1,7602::66769777
+3 _WPID 1,7602::66769778
+0 @O1@ OBJE
+1 FILE
+2 FORM jpg
+3 TYPE image
+3 _STYPE png
+3 _SIZE 407609
+3 _WDTH 467
+3 _HGHT 573
+2 TITL Teddy Roosevelt
+1 _OID 41180d7e-6dae-490c-89d7-c0cb1f2d8513
+1 _CREA 2025-07-26 11:19:33.031
+1 _USER 245tkUZogXj/SZRJAJk7sol0QBEOZTwuj44C2brRUgkYrF28PPZw2MbwUpUFDZupj6RA95lY3Zq5Agi9Fsf1kQ==
+2 _ENCR 1
+1 _CLON
+2 _TID 12933531
+2 _PID 432118000823
+2 _OID 0335472a-b354-424f-b3b7-d311f2342791
+3 _ENCR 1
+2 _DATE 2019-07-28 21:07:19.000
+1 _ORIG u
+1 _MSER
+2 _LKID 0335472a-b354-424f-b3b7-d311f2342791
+1 _ATL N
+0 @O2@ OBJE
+1 FILE
+2 FORM jpg
+3 TYPE image
+3 _MTYPE portrait
+3 _STYPE jpg
+3 _SIZE 81431
+3 _WDTH 410
+3 _HGHT 610
+2 TITL IMG_7321.JPG
+1 _OID 517c5a25-6d8e-4799-af91-e91be2698151
+1 _CREA 2025-07-26 11:19:33.031
+1 _USER N2U8A6lspkrVkr4O5QU619b6xwh97u2NqtJDxBojgGXQ3U9bl+zvgNGINMoG4yHm2uLRDxrMWbadbJHGrvTAeQ==
+2 _ENCR 1
+1 _CLON
+2 _TID 100892382
+2 _PID 100132186790
+2 _OID 8462ff3d-960a-4878-aa34-8c4cb7e6282c
+3 _ENCR 1
+2 _DATE 2017-08-16 02:17:57.000
+1 _ORIG u
+1 _MSER
+2 _LKID 8462ff3d-960a-4878-aa34-8c4cb7e6282c
+1 _ATL N
+0 @S423456128@ SOUR
+1 TITL 1900 United States Federal Census
+1 AUTH Ancestry.com
+1 PUBL Ancestry.com Operations Inc
+2 DATE 2004
+2 PLAC Lehi, UT, USA
+1 _APID 1,7602::0
+1 REPO @R306083423@
+0 @S423456135@ SOUR
+1 TITL New York, U.S., Military Service Cards, 1816-1979
+1 AUTH Ancestry.com
+1 PUBL Ancestry.com Operations, Inc.
+2 DATE 2012
+2 PLAC Provo, UT, USA
+1 _APID 1,2340::0
+1 REPO @R306083423@
+0 @S423456139@ SOUR
+1 TITL U.S. and International Marriage Records, 1560-1900
+1 AUTH Yates Publishing
+1 PUBL Ancestry.com Operations Inc
+2 DATE 2004
+2 PLAC Provo, UT, USA
+1 _APID 1,7836::0
+1 REPO @R306083423@
+0 @R306083423@ REPO
+1 NAME Ancestry.com
+0 TRLR

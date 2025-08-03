@@ -16,3 +16,6 @@ requires-python = ">=3.6"
 Homepage = "https://github.com/mcobtechnology/simple-gedcom"
 
 [tool.setuptools.packages.find]
+
+[project.optional-dependencies]
+test = ["pytest"]
