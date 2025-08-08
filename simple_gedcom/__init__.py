@@ -1,5 +1,5 @@
 from .parser import GedcomParser
-from .people import get_person_list, find_persons_by_name, get_pedigree
+from .people import get_person_list, find_persons_by_name, get_pedigree, fill_person
 from .people import save_person_list_to_csv, save_pedigree_to_csv
 from .sources import get_source_list, get_person_source_list
 from .sources import save_source_list_to_csv, save_person_source_list_to_csv

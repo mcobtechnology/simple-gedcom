@@ -181,4 +181,3 @@ class GedcomParser:
     def get_source_by_pointer(self, pointer: str) -> SourceElement:
         """Get a source by its pointer/ID"""
         return self.__sources.get(pointer)
-

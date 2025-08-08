@@ -1,5 +1,7 @@
 from typing import List
 from .parser import GedcomParser
+from .people import get_pedigree, fill_person
+from .utils import save_data_to_csv
 
 def get_source_list(parser: GedcomParser) -> List[dict]:
     """Get all source records as dictionaries"""
@@ -18,59 +20,14 @@ def get_source_list(parser: GedcomParser) -> List[dict]:
     
     return sources_list
 
-def save_source_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
-    """Get source data and save to CSV file"""
-    import csv
-    import os
-    
-    # Get the original GEDCOM file path from parser
-    gedcom_filepath = parser.get_file_path()
-    if gedcom_filepath is None:
-        raise ValueError("No GEDCOM file has been parsed yet")
-    
-    # If no output filename specified, use the GEDCOM file's path and name
-    if output_filename is None:
-        directory = os.path.dirname(gedcom_filepath)
-        base_name = os.path.splitext(os.path.basename(gedcom_filepath))[0]
-        output_filename = os.path.join(directory, f"{base_name}_sources.csv")
-    
-    # Get the source data
-    sources = get_source_list(parser)
-    
-    # Handle empty data
-    if not sources:
-        # Create empty CSV file
-        with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
-            pass
-        return output_filename
-    
-    # Get column headers from the first record
-    headers = list(sources[0].keys())
-    
-    # Write to CSV
-    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=headers)
-        writer.writeheader()
-        writer.writerows(sources)
-    
-    return output_filename
-
-
 def get_person_source_list(parser: GedcomParser) -> List[dict]:
     """Get people data with one row per person-source combination"""
     person_source_list = []
 
     # Go through all individuals
     for person in parser.get_individuals().values():
-        pointer = person.get_pointer()
-        first_name, last_name = person.get_name()
 
-        # Base person data
-        base_person_data = {
-            'Person ID': pointer,
-            'First Name': first_name,
-            'Last Name': last_name          
-        }
+        person_data = fill_person(GedcomParser, person)
 
         person_sources = person.get_all_person_sources()
 
@@ -80,51 +37,110 @@ def get_person_source_list(parser: GedcomParser) -> List[dict]:
                 sources_dict = parser.get_sources()
                 if source_pointer in sources_dict:
                     source = sources_dict[source_pointer]
-                    row_data = base_person_data.copy()
-                    row_data.update({
-                        'Source ID': source.get_pointer(),
+
+                    # pick the appropriate fields
+                    row_data = {
+                        'First Name': person_data.get('First Name'),
+                        'Last Name': person_data.get('Last Name'),
+                        'Birth Date': person_data.get('Birth Date'),
+                        'Birth Place': person_data.get('Birth Place'),
+                        'Death Date': person_data.get('Death Date'),
+                        'Death Place': person_data.get('Death Place'),
                         'Source Title': source.get_title(),
-                        'Source Author': source.get_author(),
                         'Source Publication': source.get_publication(),
-                        'Source Repository': source.get_repository()
-                    })
+                        'Person ID': person_data.get('Person ID') 
+                    }
+
                     person_source_list.append(row_data)
 
+        else:
+            # Person has no sources - include them with empty source fields
+            row_data = {
+                'First Name': person_data.get('First Name'),
+                'Last Name': person_data.get('Last Name'),
+                'Birth Date': person_data.get('Birth Date'),
+                'Birth Place': person_data.get('Birth Place'),
+                'Death Date': person_data.get('Death Date'),
+                'Death Place': person_data.get('Death Place'),
+                'Source Title': '',
+                'Source Publication': '',
+                'Person ID': person_data.get('Person ID') 
+            }
+
+            person_source_list.append(row_data)
+            
     return person_source_list
+
+
+def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
+    """Get pedigree data with one row per person-source combination"""
+    pedigree_source_list = []
+
+    # Get the pedigree data
+    pedigree_list = get_pedigree(parser)
+    
+    # Get all individuals once
+    individuals = parser.get_individuals()
+
+        # Go through each person in the pedigree
+    for pedigree_person in pedigree_list:
+        person_id = pedigree_person.get('Person ID')
+                    
+        person = individuals[person_id]
+        
+        # Pedigree person data
+        pedigree_data = {
+            'Position': pedigree_person.get('Position'),
+            'Generation': pedigree_person.get('Generation'),
+            'First Name': pedigree_person.get('First Name'),
+            'Last Name': pedigree_person.get('Last Name'),
+            'Birth Date': pedigree_person.get('Birth Date'),
+            'Birth Place': pedigree_person.get('Birth Place'),
+            'Death Date': pedigree_person.get('Death Date'),
+            'Death Place': pedigree_person.get('Death Place')
+        }
+
+        # Get all sources for this person
+        person_sources = person.get_all_person_sources()
+
+        if person_sources:
+            # Create one row per source
+            for source_pointer in person_sources:
+                sources_dict = parser.get_sources()
+                if source_pointer in sources_dict:
+
+                    source = sources_dict[source_pointer]
+
+                    row_data = pedigree_data.copy()
+                    
+                    row_data.update({
+                        'Source Title': source.get_title(),
+                        'Source Publication': source.get_publication()
+                    })
+
+                    pedigree_source_list.append(row_data)
+        else:
+            # If no sources, add the person data without source information
+            row_data = pedigree_data.copy()
+            row_data.update({
+                'Source Title': '',
+                'Source Publication': ''
+            })
+            pedigree_source_list.append(row_data)
+
+    return pedigree_source_list
+
+def save_source_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
+    """Get source data and save to CSV file"""
+    sources = get_source_list(parser)
+    return save_data_to_csv(parser, sources, " sources", output_filename)
 
 def save_person_source_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get person source data and save to CSV file"""
-    import csv
-    import os
-    
-    # Get the original GEDCOM file path from parser
-    gedcom_filepath = parser.get_file_path()
-    if gedcom_filepath is None:
-        raise ValueError("No GEDCOM file has been parsed yet")
-    
-    # If no output filename specified, use the GEDCOM file's path and name
-    if output_filename is None:
-        directory = os.path.dirname(gedcom_filepath)
-        base_name = os.path.splitext(os.path.basename(gedcom_filepath))[0]
-        output_filename = os.path.join(directory, f"{base_name}_person_sources.csv")
-    
-    # Get the source data
     person_source_list = get_person_source_list(parser)
-    
-    # Handle empty data
-    if not person_source_list:
-        # Create empty CSV file
-        with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
-            pass
-        return output_filename
-    
-    # Get column headers from the first record
-    headers = list(person_source_list[0].keys())
-    
-    # Write to CSV
-    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=headers)
-        writer.writeheader()
-        writer.writerows(person_source_list)
-    
-    return output_filename
+    return save_data_to_csv(parser, person_source_list, " people sources", output_filename)
+
+def save_pedigree_source_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
+    """Get pedigree source data and save to CSV file"""
+    pedigree_source_list = get_pedigree_source_list(parser)
+    return save_data_to_csv(parser, pedigree_source_list, " pedigree sources", output_filename)

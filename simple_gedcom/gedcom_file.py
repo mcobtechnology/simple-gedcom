@@ -2,8 +2,8 @@ from typing import List
 from .parser import GedcomParser
 from .people import get_person_list, find_persons_by_name, save_person_list_to_csv
 from .people import get_pedigree, save_pedigree_to_csv
-from .sources import get_source_list, get_person_source_list
-from .sources import save_source_list_to_csv, save_person_source_list_to_csv
+from .sources import get_source_list, get_person_source_list, get_pedigree_source_list
+from .sources import save_source_list_to_csv, save_person_source_list_to_csv, save_pedigree_source_list_to_csv
 
 class GedcomFile:
     """Wrapper class for GEDCOM file operations"""
@@ -39,6 +39,13 @@ class GedcomFile:
     def save_pedigree_to_csv(self, output_filename: str = None):
         return save_pedigree_to_csv(self._parser, output_filename)
     
+    def get_pedigree_source_list(self) -> List[dict]:
+        return get_pedigree_source_list(self._parser)
+
+    def save_pedigree_source_list_to_csv(self, output_filename: str = None):
+        return save_pedigree_source_list_to_csv(self._parser, output_filename)
+
 def load_gedcom(file_path: str) -> GedcomFile:
     """Load a GEDCOM file for analysis"""
     return GedcomFile(file_path)
+
