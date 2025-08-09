@@ -1,6 +1,7 @@
 from typing import List
 from .parser import GedcomParser
-from .people import get_pedigree, fill_person, remove_duplicates_from_pedigree
+from .people import fill_person
+from .pedigree import get_pedigree, remove_duplicates_from_pedigree
 from .utils import save_data_to_csv
 
 def get_source_list(parser: GedcomParser) -> List[dict]:
