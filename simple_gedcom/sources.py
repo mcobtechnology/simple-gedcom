@@ -1,6 +1,6 @@
 from typing import List
 from .parser import GedcomParser
-from .people import get_pedigree, fill_person
+from .people import get_pedigree, fill_person, remove_duplicates_from_pedigree
 from .utils import save_data_to_csv
 
 def get_source_list(parser: GedcomParser) -> List[dict]:
@@ -78,6 +78,7 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
 
     # Get the pedigree data
     pedigree_list = get_pedigree(parser)
+    pedigree_list = remove_duplicates_from_pedigree(pedigree_list)
     
     # Get all individuals once
     individuals = parser.get_individuals()
@@ -115,7 +116,8 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
                     
                     row_data.update({
                         'Source Title': source.get_title(),
-                        'Source Publication': source.get_publication()
+                        'Source Publication': source.get_publication(),
+                        'Person ID': person_id
                     })
 
                     pedigree_source_list.append(row_data)
@@ -124,7 +126,8 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
             row_data = pedigree_data.copy()
             row_data.update({
                 'Source Title': '',
-                'Source Publication': ''
+                'Source Publication': '',
+                'Person ID': person_id
             })
             pedigree_source_list.append(row_data)
 

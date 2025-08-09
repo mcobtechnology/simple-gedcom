@@ -93,6 +93,7 @@ def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
         pedigree["HP"] = hp_data
                 
         # Recursively build the pedigree
+        # to a maximum of 10 generations
         build_pedigree_recursive(parser, start_person, 1, 1, 10, pedigree)
     
     # Transform the data (pivot and order)
@@ -116,7 +117,7 @@ def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
 
 def build_pedigree_recursive(parser: GedcomParser, person: Person, position_number: int, generation: int, max_generations: int, pedigree: dict):
     """Recursively build pedigree up to max_generations"""
-    
+           
     # Stop if we've reached the maximum generation
     if generation > max_generations:
         return
@@ -129,9 +130,12 @@ def build_pedigree_recursive(parser: GedcomParser, person: Person, position_numb
     mother_position = position_number * 2 + 1
     
     # Generate the position keys based on generation
-    father_key = get_position_key(father_position, generation)
-    mother_key = get_position_key(mother_position, generation)
+    # father_key = get_position_key(father_position, generation)
+    # mother_key = get_position_key(mother_position, generation)
     
+    father_key = get_position_key(father_position, generation + 1)
+    mother_key = get_position_key(mother_position, generation + 1)
+
     # Process father
     if father is not None:
         father_data = fill_person(parser, father)
@@ -148,22 +152,31 @@ def build_pedigree_recursive(parser: GedcomParser, person: Person, position_numb
 
 def get_position_key(position_number: int, generation: int) -> str:
     """Generate position key based on generation and position number"""
+
     if generation == 1:  # Parents
         return "P1" if position_number == 2 else "P2"
     elif generation == 2:  # Grandparents
-        # Position 4,5,6,7 -> GP1,GP2,GP3,GP4
         return f"GP{position_number - 3}"
     else:  # Great-grandparents and beyond
-        # Generate G prefix (G, GG, GGG, etc.)
         g_count = generation - 2
         g_prefix = "G" * g_count
-        
-        # Calculate the starting position for this generation
-        # Gen 3: starts at position 8, Gen 4: starts at position 16, etc.
-        generation_start = 2 ** generation
+        generation_start = 2 ** (generation - 1) 
         relative_position = position_number - generation_start + 1
-        
         return f"{g_prefix}GP{relative_position}"
+
+def remove_duplicates_from_pedigree(pedigree_list):
+    """Remove duplicate people, keeping only the first occurrence of each person"""
+    seen_person_ids = set()
+    unique_pedigree = []
+    
+    for entry in pedigree_list:
+        person_id = entry.get('Person ID')
+        if person_id not in seen_person_ids:
+            seen_person_ids.add(person_id)
+            unique_pedigree.append(entry)
+        # Skip if we've already seen this person
+    
+    return unique_pedigree
 
 def save_person_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get people data and save to CSV file"""
