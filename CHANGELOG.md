@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.5] - 2025-08-11
+### Changed
+- Add analytics functions for pedigree
+- Fix errors when there are duplicates in the pedigree
+
 ## [1.0.4] - 2025-08-03
 ### Changed
 - Change project name to use an underscore instead of a hyphen
