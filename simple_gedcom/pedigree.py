@@ -4,7 +4,7 @@ from .elements import Person
 from .people import fill_person
 from .utils import save_data_to_csv
 
-def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
+def get_pedigree(parser: GedcomParser, person_pointer: str = None, max_generations: int = 10) -> list:
     """Get pedigree starting from a specific person or the first person found"""    
     root_child_elements = parser.get_root_child_elements()
     pedigree_data = {}
@@ -34,8 +34,7 @@ def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
         pedigree_data["HP"] = hp_data
                 
         # Recursively build the pedigree
-        # to a maximum of 10 generations
-        build_pedigree_recursive(parser, start_person, 1, 1, 10, pedigree_data)
+        build_pedigree_recursive(parser, start_person, 1, 1, max_generations, pedigree_data)
     
     # Transform the data (pivot and order)
     pedigree = []
