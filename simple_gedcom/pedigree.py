@@ -1,13 +1,13 @@
 
 from .parser import GedcomParser
 from .elements import Person 
-from .people import fill_person, get_person_list
+from .people import fill_person
 from .utils import save_data_to_csv
 
 def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
     """Get pedigree starting from a specific person or the first person found"""    
     root_child_elements = parser.get_root_child_elements()
-    pedigree = {}
+    pedigree_data = {}
     start_person = None
     
     if person_pointer:
@@ -31,15 +31,15 @@ def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
         # Start with the specified person as HP (Home Person)
         hp_data = fill_person(parser, start_person)
         hp_data['Generation'] = 1
-        pedigree["HP"] = hp_data
+        pedigree_data["HP"] = hp_data
                 
         # Recursively build the pedigree
         # to a maximum of 10 generations
-        build_pedigree_recursive(parser, start_person, 1, 1, 10, pedigree)
+        build_pedigree_recursive(parser, start_person, 1, 1, 10, pedigree_data)
     
     # Transform the data (pivot and order)
-    pedigree_list = []
-    for position, data in pedigree.items():
+    pedigree = []
+    for position, data in pedigree_data.items():
         # Create a new dict with Position as first field
         row = {'Position': position}
         # Add all other fields from the data
@@ -48,13 +48,13 @@ def get_pedigree(parser: GedcomParser, person_pointer: str = None) -> list:
         else:
             # If data is not a dict, store it in a 'Value' column
             row['Value'] = data
-        pedigree_list.append(row)
+        pedigree.append(row)
     
     # Sort by Generation
-    if pedigree_list and 'Generation' in pedigree_list[0]:
-        pedigree_list.sort(key=lambda x: x.get('Generation', 0))
+    if pedigree and 'Generation' in pedigree[0]:
+        pedigree.sort(key=lambda x: x.get('Generation', 0))
     
-    return pedigree_list
+    return pedigree
 
 def build_pedigree_recursive(parser: GedcomParser, person: Person, position_number: int, generation: int, max_generations: int, pedigree: dict):
     """Recursively build pedigree up to max_generations"""
@@ -101,12 +101,12 @@ def get_position_key(position_number: int, generation: int) -> str:
         relative_position = position_number - generation_start + 1
         return f"{g_prefix}GP{relative_position}"
 
-def remove_duplicates_from_pedigree(pedigree_list):
+def remove_duplicates_from_pedigree(pedigree):
     """Remove duplicate people, keeping only the first occurrence of each person"""
     seen_person_ids = set()
     unique_pedigree = []
     
-    for entry in pedigree_list:
+    for entry in pedigree:
         person_id = entry.get('Person ID')
         if person_id not in seen_person_ids:
             seen_person_ids.add(person_id)
@@ -115,7 +115,6 @@ def remove_duplicates_from_pedigree(pedigree_list):
     
     return unique_pedigree
 
-
 def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
     """Get pedigree data and save to CSV file"""
     # Get the pedigree data
@@ -123,3 +122,99 @@ def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> s
     return save_data_to_csv(parser, pedigree_list, " pedigree", output_filename)
 
 
+def show_generation_counts(pedigree):
+    """Show count of ancestors in each generation vs maximum possible"""
+    from collections import Counter
+    
+    # Count people per generation
+    generation_counts = Counter(entry.get('Generation') for entry in pedigree)
+    
+    print("Generation Analysis:")
+    print("Gen | Actual | Max Possible | Percentage | Description")
+    print("----|--------|--------------|------------|------------------")
+    
+    total_actual = 0
+    total_possible = 0
+    
+    # Get all generations present
+    generations = sorted(generation_counts.keys())
+    
+    for gen in generations:
+        actual = generation_counts[gen]
+        max_possible = 2 ** (gen - 1)  # 2^(generation-1)
+        percentage = (actual / max_possible) * 100 if max_possible > 0 else 0
+        
+        # Description
+        if gen == 1:
+            desc = "Home Person"
+        elif gen == 2:
+            desc = "Parents"
+        elif gen == 3:
+            desc = "Grandparents"
+        elif gen == 4:
+            desc = "Great-grandparents"
+        elif gen == 5:
+            desc = "2nd great-grandparents"
+        elif gen == 6:
+            desc = "3rd great-grandparents"
+        elif gen == 7:
+            desc = "4th great-grandparents"
+        elif gen == 8:
+            desc = "5th great-grandparents"
+        elif gen == 9:
+            desc = "6th great-grandparents"
+        elif gen == 10:
+            desc = "7th great-grandparents"
+        elif gen == 11:
+            desc = "8th great-grandparents"
+        else:
+            # For generations beyond 11
+            ordinal = gen - 3
+            desc = f"{ordinal}th great-grandparents"
+
+        print(f" {gen:2d} | {actual:6d} | {max_possible:12d} | {percentage:8.1f}% | {desc}")
+        
+        total_actual += actual
+        total_possible += max_possible
+    
+    overall_percentage = (total_actual / total_possible) * 100 if total_possible > 0 else 0
+    
+    print("----|--------|--------------|------------|------------------")
+    print(f"Tot | {total_actual:6d} | {total_possible:12d} | {overall_percentage:8.1f}% | Overall completeness")
+    
+def show_pedigree_duplicates(pedigree):
+    """Show duplicate analysis for pedigree entries"""
+    from collections import Counter
+    
+    person_ids = [entry.get('Person ID') for entry in pedigree]
+    id_counts = Counter(person_ids)
+
+    unique_people = len(id_counts)
+    total_entries = len(pedigree)
+    duplicate_entries = total_entries - unique_people
+
+    print(f"Total entries: {total_entries}")
+    print(f"Unique people: {unique_people}")
+    print(f"Duplicate entries: {duplicate_entries}")
+
+    # Show people with multiple appearances including generation info
+    multiple_appearances = {pid: count for pid, count in id_counts.items() if count > 1}
+    print(f"\nPeople appearing multiple times: {len(multiple_appearances)}")
+
+    for pid, count in multiple_appearances.items():
+        # Find all entries for this person
+        person_entries = [entry for entry in pedigree if entry.get('Person ID') == pid]
+        first_entry = person_entries[0]
+        name = f"{first_entry.get('First Name', '')} {first_entry.get('Last Name', '')}"
+        generations = [entry.get('Generation') for entry in person_entries]
+        positions = [entry.get('Position') for entry in person_entries]
+        
+        print(f"  {name} ({pid}): {count} times")
+        
+        unique_generations = list(set(generations))
+        if len(unique_generations) == 1:
+            print(f"    Generation: {unique_generations[0]} ({count} times)")
+        else:
+            print(f"    Generations: {generations}")
+            
+        print(f"    Positions: {positions}")

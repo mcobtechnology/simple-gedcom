@@ -78,14 +78,14 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
     pedigree_source_list = []
 
     # Get the pedigree data
-    pedigree_list = get_pedigree(parser)
-    pedigree_list = remove_duplicates_from_pedigree(pedigree_list)
+    pedigree = get_pedigree(parser)
+    pedigree = remove_duplicates_from_pedigree(pedigree)
     
     # Get all individuals once
     individuals = parser.get_individuals()
 
         # Go through each person in the pedigree
-    for pedigree_person in pedigree_list:
+    for pedigree_person in pedigree:
         person_id = pedigree_person.get('Person ID')
                     
         person = individuals[person_id]
