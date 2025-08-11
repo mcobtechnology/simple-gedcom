@@ -1,17 +1,18 @@
 # Simple GEDCOM Parser
 
-A simplified Python library for extracting genealogy data from GEDCOM files, focused on two primary use cases:
+A simplified Python library for extracting genealogy data from GEDCOM files:
 
-1. **Extract basic person data** - Get a clean list of people with vital information and family relationships
-2. **Extract person-source relationships** - Map people to their documentary sources
+1. **Extract basic person data** - Get a list of people with vital information
+2. **Extract sources** - Get lists of documentary sources
+3. **Extract pedigree** - Get direct ancestors
 
 ## Features
 
 - Parse GEDCOM 5.5 files
 - Extract person data: names, birth/death dates and places, parents
 - Extract source citations linked to individuals
+- Extract pedigree
 - Simple, clean API designed for data analysis and writing to csv files
-- Easy integration with pandas DataFrames
 
 ## Quick Start
 
@@ -29,6 +30,13 @@ gedcom.save_pedigree_to_csv()
 gedcom.save_source_list_to_csv()
 
 gedcom.save_person_source_list_to_csv()
+
+# pedigree analytics
+pedigree = gedcom.get_pedigree()
+
+gedcom.show_generation_counts(pedigree) 
+
+gedcom.show_pedigree_duplicates(pedigree) 
 
 # Use pandas to display lists
 import pandas as pd
@@ -50,7 +58,7 @@ df_pedigree = pd.DataFrame(pedigree)
 print(df_pedigree.head())
 
 # Search by name
-found = gedcom.find_persons_by_name(first===_name="Theodore")
+found = gedcom.find_persons_by_name(first_name="Theodore")
 df_found = pd.DataFrame(found)
 print(df_found.head())
 
