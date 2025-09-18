@@ -11,14 +11,35 @@ def fill_person(parser: GedcomParser, person: Person) -> dict:
     birth_date, birth_place = person.get_birth_date_place()
     death_date, death_place = person.get_death_date_place()
     
+    # Get parents
+    father, mother = parser.get_father_mother(person)
+
+    father_first_name = father_last_name = father_id = ""
+    mother_first_name = mother_last_name = mother_id = ""
+
+    if father:
+        father_first_name, father_last_name = father.get_name()
+        father_id = father.get_pointer()
+
+    if mother:
+        mother_first_name, mother_last_name = mother.get_name()
+        mother_id = mother.get_pointer()
+
+    # Populate dictionary    
     return {
-        'Person ID': person.get_pointer(),
         'First Name': first_name,
         'Last Name': last_name,
         'Birth Date': birth_date,
         'Birth Place': birth_place,
         'Death Date': death_date,
-        'Death Place': death_place
+        'Death Place': death_place,
+        'Father First Name': father_first_name,
+        'Father Last Name': father_last_name,
+        'Mother First Name': mother_first_name,
+        'Mother Last Name': mother_last_name,
+        'Person ID': person.get_pointer(),
+        'Father ID': father_id,
+        'Mother ID': mother_id
     }
 
 def get_person_list(parser: GedcomParser) -> List[dict]:
@@ -67,11 +88,4 @@ def save_person_list_to_csv(parser: GedcomParser, output_filename: str = None) -
     """Get people data and save to CSV file"""
     person_list = get_person_list(parser)
     return save_data_to_csv(parser, person_list, " people", output_filename)
-
-def save_pedigree_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
-    """Get pedigree data and save to CSV file"""
-    # Get the pedigree data
-    pedigree_list = get_pedigree(parser)
-    return save_data_to_csv(parser, pedigree_list, " pedigree", output_filename)
-
 
