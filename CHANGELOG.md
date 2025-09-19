@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.6] - 2025-09-19
+### Changed
+- Add parents to the person list to give context
+- Move the IDs to the end of the spreadsheets
+
 ## [1.0.5] - 2025-08-11
 ### Changed
 - Add analytics functions for pedigree
