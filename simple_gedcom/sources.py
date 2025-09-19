@@ -11,10 +11,10 @@ def get_source_list(parser: GedcomParser) -> List[dict]:
     sources_list = []
     for source in sources_dict.values():
         source_data = {
-            'Source ID': source.get_pointer(),
             'Title': source.get_title(),
             'Author': source.get_author(),
             'Publication': source.get_publication(),
+            'Source ID': source.get_pointer(),
             'Repository': source.get_repository()
         }
         sources_list.append(source_data)
@@ -28,7 +28,7 @@ def get_person_source_list(parser: GedcomParser) -> List[dict]:
     # Go through all individuals
     for person in parser.get_individuals().values():
 
-        person_data = fill_person(GedcomParser, person)
+        person_data = fill_person(parser, person)
 
         person_sources = person.get_all_person_sources()
 
