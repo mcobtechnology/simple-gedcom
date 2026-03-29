@@ -11,10 +11,10 @@ def get_source_list(parser: GedcomParser) -> List[dict]:
     sources_list = []
     for source in sources_dict.values():
         source_data = {
-            'Source ID': source.get_pointer(),
             'Title': source.get_title(),
             'Author': source.get_author(),
             'Publication': source.get_publication(),
+            'Source ID': source.get_pointer(),
             'Repository': source.get_repository()
         }
         sources_list.append(source_data)
@@ -28,14 +28,14 @@ def get_person_source_list(parser: GedcomParser) -> List[dict]:
     # Go through all individuals
     for person in parser.get_individuals().values():
 
-        person_data = fill_person(GedcomParser, person)
+        person_data = fill_person(parser, person)
 
         person_sources = person.get_all_person_sources()
 
         if person_sources:
+            sources_dict = parser.get_sources()
             # Create one row per source
             for source_pointer in person_sources:
-                sources_dict = parser.get_sources()
                 if source_pointer in sources_dict:
                     source = sources_dict[source_pointer]
 
@@ -81,10 +81,11 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
     pedigree = get_pedigree(parser)
     pedigree = remove_duplicates_from_pedigree(pedigree)
     
-    # Get all individuals once
+    # Get all individuals and sources once
     individuals = parser.get_individuals()
+    sources_dict = parser.get_sources()
 
-        # Go through each person in the pedigree
+    # Go through each person in the pedigree
     for pedigree_person in pedigree:
         person_id = pedigree_person.get('Person ID')
                     
@@ -108,7 +109,6 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
         if person_sources:
             # Create one row per source
             for source_pointer in person_sources:
-                sources_dict = parser.get_sources()
                 if source_pointer in sources_dict:
 
                     source = sources_dict[source_pointer]
