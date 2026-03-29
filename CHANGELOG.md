@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.7] - 2026-03-29
+### Changed
+- Performance improvements
+
 ## [1.0.6] - 2025-09-19
 ### Changed
 - Add parents to the person list to give context
