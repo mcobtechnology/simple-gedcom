@@ -33,9 +33,9 @@ def get_person_source_list(parser: GedcomParser) -> List[dict]:
         person_sources = person.get_all_person_sources()
 
         if person_sources:
+            sources_dict = parser.get_sources()
             # Create one row per source
             for source_pointer in person_sources:
-                sources_dict = parser.get_sources()
                 if source_pointer in sources_dict:
                     source = sources_dict[source_pointer]
 
@@ -81,10 +81,11 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
     pedigree = get_pedigree(parser)
     pedigree = remove_duplicates_from_pedigree(pedigree)
     
-    # Get all individuals once
+    # Get all individuals and sources once
     individuals = parser.get_individuals()
+    sources_dict = parser.get_sources()
 
-        # Go through each person in the pedigree
+    # Go through each person in the pedigree
     for pedigree_person in pedigree:
         person_id = pedigree_person.get('Person ID')
                     
@@ -108,7 +109,6 @@ def get_pedigree_source_list(parser: GedcomParser) -> List[dict]:
         if person_sources:
             # Create one row per source
             for source_pointer in person_sources:
-                sources_dict = parser.get_sources()
                 if source_pointer in sources_dict:
 
                     source = sources_dict[source_pointer]

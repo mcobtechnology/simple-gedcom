@@ -9,40 +9,40 @@ class GedcomParser:
         self.__individuals = {}
         self.__families = {}
         self.__sources = {}
+        self.__child_to_families = {}
 
     def parse_file(self, file_path: str, strict: bool = False):
         """Parse GEDCOM file"""
         self.__file_path = file_path  # Store the file path
-
-        with open(file_path, 'rb') as gedcom_file:
-            gedcom_lines = gedcom_file.readlines()
 
         # Reset state
         self.__root_element = GedcomElement(-1, '', 'ROOT', '')
         self.__individuals = {}
         self.__families = {}
         self.__sources = {}
+        self.__child_to_families = {}
 
         # Parse lines
         element_stack = [self.__root_element]
 
-        for line_num, line in enumerate(gedcom_lines, 1):
-            try:
-                # Handle encoding
+        with open(file_path, 'rb') as gedcom_file:
+            for line_num, line in enumerate(gedcom_file, 1):
                 try:
-                    line_str = line.decode('utf-8-sig').rstrip('\r\n')
-                except UnicodeDecodeError:
-                    line_str = line.decode('utf-8', errors='replace').rstrip('\r\n')
+                    # Handle encoding
+                    try:
+                        line_str = line.decode('utf-8-sig').rstrip('\r\n')
+                    except UnicodeDecodeError:
+                        line_str = line.decode('utf-8', errors='replace').rstrip('\r\n')
 
-                if not line_str.strip():
+                    if not line_str.strip():
+                        continue
+
+                    element_stack = self._parse_line(line_str, element_stack, strict)
+
+                except Exception as e:
+                    if strict:
+                        raise ValueError(f"Error parsing line {line_num}: {e}")
                     continue
-
-                element_stack = self._parse_line(line_str, element_stack, strict)
-
-            except Exception as e:
-                if strict:
-                    raise ValueError(f"Error parsing line {line_num}: {e}")
-                continue
 
     def _parse_line(self, line: str, element_stack: List[GedcomElement], strict: bool) -> List[GedcomElement]:
         """Parse single GEDCOM line"""
@@ -89,6 +89,13 @@ class GedcomParser:
             element_stack.pop()
 
         parent = element_stack[-1]
+
+        # Build child→family reverse index when a CHIL tag is encountered inside a FAM record
+        if tag == 'CHIL' and value and isinstance(parent, FamilyElement):
+            family_pointer = parent.get_pointer()
+            if family_pointer:
+                self.__child_to_families.setdefault(value, []).append(family_pointer)
+
         parent.add_child(element)
         element_stack.append(element)
 
@@ -110,21 +117,18 @@ class GedcomParser:
         if not individual_pointer:
             return parents
 
-        # Find families where this individual is a child
-        for family in self.__families.values():
-            if individual_pointer in family.get_children():
-                husband_pointer = family.get_husband()
-                wife_pointer = family.get_wife()
+        for family_pointer in self.__child_to_families.get(individual_pointer, []):
+            family = self.__families.get(family_pointer)
+            if family is None:
+                continue
+            husband_pointer = family.get_husband()
+            wife_pointer = family.get_wife()
 
-                if husband_pointer and husband_pointer in self.__individuals:
-                    husband = self.__individuals[husband_pointer]
-                    if husband is not None:  # Extra safety check
-                        parents.append(husband)
+            if husband_pointer and husband_pointer in self.__individuals:
+                parents.append(self.__individuals[husband_pointer])
 
-                if wife_pointer and wife_pointer in self.__individuals:
-                    wife = self.__individuals[wife_pointer]
-                    if wife is not None:  # Extra safety check
-                        parents.append(wife)
+            if wife_pointer and wife_pointer in self.__individuals:
+                parents.append(self.__individuals[wife_pointer])
 
         return parents
 
@@ -136,37 +140,39 @@ class GedcomParser:
         if not individual_pointer:
             return (father, mother)
 
-        # Find families where this individual is a child
-        for family in self.__families.values():
-            if individual_pointer in family.get_children():
-                husband_pointer = family.get_husband()
-                wife_pointer = family.get_wife()
+        collected_parents = []
+        for family_pointer in self.__child_to_families.get(individual_pointer, []):
+            family = self.__families.get(family_pointer)
+            if family is None:
+                continue
+            husband_pointer = family.get_husband()
+            wife_pointer = family.get_wife()
 
-                # Use family roles first
-                if husband_pointer and husband_pointer in self.__individuals:
-                    father = self.__individuals[husband_pointer]
+            if husband_pointer and husband_pointer in self.__individuals:
+                parent = self.__individuals[husband_pointer]
+                if father is None:
+                    father = parent
+                collected_parents.append(parent)
 
-                if wife_pointer and wife_pointer in self.__individuals:
-                    mother = self.__individuals[wife_pointer]
+            if wife_pointer and wife_pointer in self.__individuals:
+                parent = self.__individuals[wife_pointer]
+                if mother is None:
+                    mother = parent
+                collected_parents.append(parent)
 
-        # If we didn't find both from family roles, fall back to any remaining parents by gender
+        # If we didn't find both from family roles, fall back to gender
         if not father or not mother:
-            all_parents = self.get_parents(individual)
-            for parent in all_parents:
-                # Skip if already assigned by family role
+            for parent in collected_parents:
                 if parent == father or parent == mother:
                     continue
-
                 if not father and parent.get_gender() == 'M':
                     father = parent
                 elif not mother and parent.get_gender() == 'F':
                     mother = parent
-                elif not father and not mother:
-                    # If no gender info, assign to first available slot
-                    if not father:
-                        father = parent
-                    else:
-                        mother = parent
+                elif not father:
+                    father = parent
+                elif not mother:
+                    mother = parent
 
         return (father, mother)
 

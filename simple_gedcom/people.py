@@ -5,12 +5,12 @@ from .utils import save_data_to_csv
 
 def fill_person(parser: GedcomParser, person: Person) -> dict:
     """Fill person data dictionary"""
-    
+
     first_name, last_name = person.get_name()
-    
+
     birth_date, birth_place = person.get_birth_date_place()
     death_date, death_place = person.get_death_date_place()
-    
+
     # Get parents
     father, mother = parser.get_father_mother(person)
 
@@ -25,7 +25,6 @@ def fill_person(parser: GedcomParser, person: Person) -> dict:
         mother_first_name, mother_last_name = mother.get_name()
         mother_id = mother.get_pointer()
 
-    # Populate dictionary    
     return {
         'First Name': first_name,
         'Last Name': last_name,
