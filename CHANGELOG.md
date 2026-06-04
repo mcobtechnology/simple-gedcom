@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.8] - 2026-06-04
+### Changed
+- `get_person_list()` and `save_person_list_to_csv()` now accept `extended` and `marriages` parameters, replacing the separate `get_person_extended()` and `get_person_list_with_marriages()` functions
+- `extended=True` adds suffix, gender, and status columns
+- `marriages=True` adds numbered spouse, marriage date, and family ID columns
+- `Family N ID` added to marriage columns
+- Person ID, Father ID, and Mother ID are always ordered after person/extended fields and before marriage columns
+
 ## [1.0.7] - 2026-03-29
 ### Changed
 - Performance improvements

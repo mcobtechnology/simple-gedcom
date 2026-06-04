@@ -10,6 +10,8 @@ A simplified Python library for extracting genealogy data from GEDCOM files:
 
 - Parse GEDCOM 5.5 files
 - Extract person data: names, birth/death dates and places, parents
+- Flexible person data options: basic, extended (suffix, gender, status), or with marriages
+- Extract marriage data: spouses, marriage dates, and family IDs
 - Extract source citations linked to individuals
 - Extract pedigree
 - Simple, clean API designed for data analysis and writing to csv files
@@ -24,6 +26,9 @@ from simple_gedcom import load_gedcom
 gedcom = load_gedcom('data/tree.ged')
 
 gedcom.save_person_list_to_csv()
+gedcom.save_person_list_to_csv(extended=True)
+gedcom.save_person_list_to_csv(marriages=True)
+gedcom.save_person_list_to_csv(extended=True, marriages=True)
 
 gedcom.save_pedigree_to_csv()
 
@@ -41,7 +46,18 @@ gedcom.show_pedigree_duplicates(pedigree)
 # Use pandas to display lists
 import pandas as pd
 
+# Basic person list
 person_list = gedcom.get_person_list()
+
+# With extended fields (suffix, gender, status)
+person_list = gedcom.get_person_list(extended=True)
+
+# With marriage columns (spouse names, marriage dates, family IDs)
+person_list = gedcom.get_person_list(marriages=True)
+
+# Combined
+person_list = gedcom.get_person_list(extended=True, marriages=True)
+
 df_person_list = pd.DataFrame(person_list)
 print(df_person_list.head())
 

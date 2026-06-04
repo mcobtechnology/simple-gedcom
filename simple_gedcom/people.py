@@ -1,6 +1,6 @@
 from typing import List
 from .parser import GedcomParser
-from .elements import Person 
+from .elements import Person
 from .utils import save_data_to_csv
 
 def fill_person(parser: GedcomParser, person: Person) -> dict:
@@ -41,18 +41,30 @@ def fill_person(parser: GedcomParser, person: Person) -> dict:
         'Mother ID': mother_id
     }
 
-def get_person_list(parser: GedcomParser) -> List[dict]:
-    """Get people data with one row per person"""
-    person_list = []
+def get_person_list(
+    parser: GedcomParser,
+    extended: bool = False,
+    marriages: bool = False,
+) -> List[dict]:
+    """Get people data with one row per person.
 
-    # Go through all individuals
-    for person in parser.get_individuals().values():
-
-        person_data = fill_person(parser, person)
-
-        person_list.append(person_data)
-
-    return person_list
+    Args:
+        extended: include suffix, gender, and status columns
+        marriages: include numbered spouse/marriage columns
+    """
+    result = [fill_person(parser, p) for p in parser.get_individuals().values()]
+    if extended:
+        result = join_person_marriages(result, _get_person_other_fields(parser))
+    trailing = ('Person ID', 'Father ID', 'Mother ID')
+    result = [
+        {**{k: v for k, v in row.items() if k not in trailing},
+         **{k: row[k] for k in trailing}}
+        for row in result
+    ]
+    if marriages:
+        from .marriages import get_marriages_by_person
+        result = join_person_marriages(result, get_marriages_by_person(parser))
+    return result
 
 def find_persons_by_name(parser: GedcomParser, first_name: str = None, last_name: str = None) -> list:
     """Find persons by first and/or last name"""
@@ -83,8 +95,43 @@ def find_persons_by_name(parser: GedcomParser, first_name: str = None, last_name
     
     return matched_persons
 
-def save_person_list_to_csv(parser: GedcomParser, output_filename: str = None) -> str:
+def join_person_marriages(
+    person_list: List[dict],
+    marriages_by_person: List[dict],
+) -> List[dict]:
+    """Merge marriages_by_person into person_list, joining on 'Person ID'."""
+    index = {row['Person ID']: row for row in marriages_by_person}
+    result = []
+    for person in person_list:
+        merged = dict(person)
+        for key, val in index.get(person['Person ID'], {}).items():
+            if key != 'Person ID':
+                merged[key] = val
+        result.append(merged)
+    return result
+
+
+def _get_person_other_fields(parser: GedcomParser) -> List[dict]:
+    rows = []
+    for person in parser.get_individuals().values():
+        name_elements = person.get_child_elements('NAME')
+        suffix = name_elements[0].get_child_value('NSFX') if name_elements else ''
+        rows.append({
+            'Person ID': person.get_pointer(),
+            'Suffix':    suffix,
+            'Gender':    person.get_gender(),
+            'Status':    person.get_child_value('STAT'),
+        })
+    return rows
+
+
+
+def save_person_list_to_csv(
+    parser: GedcomParser,
+    output_filename: str = None,
+    extended: bool = False,
+    marriages: bool = False,
+) -> str:
     """Get people data and save to CSV file"""
-    person_list = get_person_list(parser)
-    return save_data_to_csv(parser, person_list, " people", output_filename)
+    return save_data_to_csv(parser, get_person_list(parser, extended=extended, marriages=marriages), " people", output_filename)
 

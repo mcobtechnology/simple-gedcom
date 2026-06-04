@@ -15,11 +15,14 @@ class GedcomFile:
         self._parser = GedcomParser()
         self._parser.parse_file(file_path)
     
-    def get_person_list(self) -> List[dict]:
-        return get_person_list(self._parser)
+    def get_person_list(self, extended: bool = False, marriages: bool = False) -> List[dict]:
+        return get_person_list(self._parser, extended=extended, marriages=marriages)
 
     def get_marriages(self) -> List[dict]:
         return get_marriages(self._parser)
+
+    def save_person_list_to_csv(self, output_filename: str = None, extended: bool = False, marriages: bool = False) -> str:
+        return save_person_list_to_csv(self._parser, output_filename, extended=extended, marriages=marriages)
 
     def get_residence_list(self) -> List[dict]:
         return get_residence_list(self._parser)
@@ -30,9 +33,6 @@ class GedcomFile:
     def find_persons_by_name(self, first_name: str = None, last_name: str = None) -> list:
         return find_persons_by_name(self._parser, first_name, last_name)
 
-    def save_person_list_to_csv(self, output_filename: str = None):
-        return save_person_list_to_csv(self._parser, output_filename)
-    
     def get_source_list(self) -> List[dict]:
         return get_source_list(self._parser)
     
