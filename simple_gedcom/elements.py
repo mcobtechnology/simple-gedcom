@@ -119,6 +119,20 @@ class Person(GedcomElement):
         """Get all source pointers associated with this person"""
         return self._all_person_sources
 
+    @cached_property
+    def _residence_records(self) -> List[Tuple[str, str, str, str]]:
+        records = []
+        for elem in self.get_child_elements('RESI'):
+            date = elem.get_child_value('DATE')
+            place = elem.get_child_value('PLAC')
+            source_pointer = elem.get_child_value('SOUR')
+            note = elem.get_child_value('NOTE')
+            records.append((date, place, source_pointer, note))
+        return records
+
+    def get_residence_records(self) -> List[Tuple[str, str, str, str]]:
+        return self._residence_records
+
 
 class SourceElement(GedcomElement):
     """Source element"""
@@ -155,3 +169,14 @@ class FamilyElement(GedcomElement):
 
     def get_children(self) -> List[str]:
         return [child.get_value() for child in self.get_child_elements('CHIL')]
+
+    @cached_property
+    def _marriage_date_place(self) -> Tuple[str, str]:
+        marr_elements = self.get_child_elements('MARR')
+        if not marr_elements:
+            return ('', '')
+        marr_element = marr_elements[0]
+        return (marr_element.get_child_value('DATE'), marr_element.get_child_value('PLAC'))
+
+    def get_marriage_date_place(self) -> Tuple[str, str]:
+        return self._marriage_date_place

@@ -180,6 +180,10 @@ class GedcomParser:
         """Get all individual records"""
         return self.__individuals
 
+    def get_families(self) -> Dict[str, FamilyElement]:
+        """Get all family records"""
+        return self.__families
+
     def get_sources(self) -> Dict[str, SourceElement]:
         """Get all source records"""
         return self.__sources

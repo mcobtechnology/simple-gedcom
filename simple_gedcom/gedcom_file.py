@@ -5,6 +5,8 @@ from .pedigree import get_pedigree, save_pedigree_to_csv
 from .pedigree import show_generation_counts, show_pedigree_duplicates
 from .sources import get_source_list, get_person_source_list, get_pedigree_source_list
 from .sources import save_source_list_to_csv, save_person_source_list_to_csv, save_pedigree_source_list_to_csv
+from .marriages import get_marriages
+from .census import get_residence_list, get_census_list
 
 class GedcomFile:
     """Wrapper class for GEDCOM file operations"""
@@ -15,6 +17,15 @@ class GedcomFile:
     
     def get_person_list(self) -> List[dict]:
         return get_person_list(self._parser)
+
+    def get_marriages(self) -> List[dict]:
+        return get_marriages(self._parser)
+
+    def get_residence_list(self) -> List[dict]:
+        return get_residence_list(self._parser)
+
+    def get_census_list(self) -> List[dict]:
+        return get_census_list(self._parser)
     
     def find_persons_by_name(self, first_name: str = None, last_name: str = None) -> list:
         return find_persons_by_name(self._parser, first_name, last_name)
