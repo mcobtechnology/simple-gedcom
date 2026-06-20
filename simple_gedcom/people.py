@@ -120,7 +120,6 @@ def _get_person_other_fields(parser: GedcomParser) -> List[dict]:
             'Person ID': person.get_pointer(),
             'Suffix':    suffix,
             'Gender':    person.get_gender(),
-            'Status':    person.get_child_value('STAT'),
         })
     return rows
 
